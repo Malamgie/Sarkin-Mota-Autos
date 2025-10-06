@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Challenger Auction Portal</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, addDoc, onSnapshot, collection, query, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // IMPORTANT: Global variables provided by the environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app, db, auth, userId = null;
+
+        // Utility function for error logging and custom alerts
+        const showMessage = (message, type = 'info') => {
+            const container = document.getElementById('app-message');
+            if (!container) return;
+
+            const baseClasses = 'p-4 mb-4 rounded-lg shadow-lg text-sm transition-opacity duration-300';
+            let typeClasses = '';
+
+            switch (type) {
+                case 'success':
+                    typeClasses = 'bg-green-100 text-green-800 border border-green-300';
+                    break;
+                case 'error':
+                    typeClasses = 'bg-red-100 text-red-800 border border-red-300';
+                    break;
+                case 'info':
+                default:
+                    typeClasses = 'bg-blue-100 text-blue-800 border border-blue-300';
+                    break;
+            }
+
+            container.innerHTML = `<div class="${baseClasses} ${typeClasses}">${message}</div>`;
+            container.style.opacity = '1';
+
+            setTimeout(() => {
+                container.style.opacity = '0';
+                setTimeout(() => container.innerHTML = '', 300);
+            }, 5000);
+        };
+
+        // 1. INITIALIZE FIREBASE AND AUTHENTICATION
+        if (firebaseConfig) {
+            setLogLevel('Debug');
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    console.log("User authenticated:", userId);
+                    document.getElementById('user-id-display').textContent = `User ID: ${userId}`;
+                    setupRealtimeAuctionListener();
+                } else {
+                    // Sign in user using custom token or anonymously
+                    try {
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            const anonymousUser = await signInAnonymously(auth);
+                            userId = anonymousUser.user.uid;
+                            console.log("Signed in anonymously:", userId);
+                            document.getElementById('user-id-display').textContent = `User ID: ${userId} (Anonymous)`;
+                            setupRealtimeAuctionListener();
+                        }
+                    } catch (error) {
+                        console.error("Firebase Auth Error:", error);
+                        showMessage("Authentication failed. Check console for details.", 'error');
+                    }
+                }
+            });
+        } else {
+            showMessage("Firebase configuration missing. Auction features are disabled.", 'error');
+            // Use a fallback random ID for UI display if Firebase setup is skipped
+            userId = 'guest-' + Math.random().toString(36).substring(2, 9);
+            document.getElementById('user-id-display').textContent = `User ID: ${userId} (No DB)`;
+        }
+
+
+        // 2. AUCTION DATA MANAGEMENT
+
+        const AUCTIONS_PATH = `artifacts/${appId}/public/data/auctions`;
+        let auctions = []; // Local state for auction data
+
+        /**
+         * Sets up a real-time listener for the public auction listings.
+         */
+        const setupRealtimeAuctionListener = () => {
+            if (!db) return;
+            const auctionCollectionRef = collection(db, AUCTIONS_PATH);
+            const q = query(auctionCollectionRef);
+
+            onSnapshot(q, (snapshot) => {
+                auctions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderAuctionListings();
+                console.log("Real-time auction data updated:", auctions.length, "items.");
+            }, (error) => {
+                console.error("Firestore Snapshot Error:", error);
+                showMessage("Could not load auction listings in real-time.", 'error');
+            });
+        };
+
+        /**
+         * Adds a new car listing to the Firestore 'auctions' collection.
+         * @param {object} carData - The data from the submission form.
+         */
+        const listCarForAuction = async (carData) => {
+            if (!db || !userId) {
+                showMessage("Cannot list car: User not authenticated or database not initialized.", 'error');
+                return;
+            }
+
+            try {
+                const newAuction = {
+                    ...carData,
+                    startPrice: parseFloat(carData.startPrice),
+                    currentBid: parseFloat(carData.startPrice), // Current bid starts at the start price
+                    startTime: serverTimestamp(),
+                    endTime: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+                    listerId: userId,
+                    status: 'Active',
+                    imagePlaceholder: `https://placehold.co/400x300/4F46E5/ffffff?text=${carData.year}+${carData.make}`
+                };
+
+                const docRef = await addDoc(collection(db, AUCTIONS_PATH), newAuction);
+                console.log("Document written with ID: ", docRef.id);
+                showMessage("Your car has been listed for auction successfully!", 'success');
+                closeModal();
+
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                showMessage("Failed to list car. Please try again.", 'error');
+            }
+        };
+
+        // 3. UI RENDERING AND ROUTING
+
+        /**
+         * Renders the current list of active auctions.
+         */
+        const renderAuctionListings = () => {
+            const listContainer = document.getElementById('auction-list-container');
+            if (!listContainer) return;
+
+            if (auctions.length === 0) {
+                listContainer.innerHTML = `
+                    <p class="text-xl text-gray-400 text-center py-10">
+                        No active auctions found. Be the first to list a vehicle!
+                    </p>
+                `;
+                return;
+            }
+
+            const auctionCards = auctions.map(car => {
+                // Ensure car.endTime is available before trying to parse
+                const endDate = car.endTime ? new Date(car.endTime) : new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000);
+                const timeRemaining = formatTimeRemaining(endDate);
+
+                return `
+                    <div class="bg-gray-800 rounded-xl overflow-hidden shadow-2xl hover:shadow-red-700/50 transition duration-300">
+                        <img src="${car.imagePlaceholder}" alt="${car.make} ${car.model}" class="w-full h-48 object-cover">
+                        <div class="p-5">
+                            <h3 class="text-2xl font-bold text-white mb-2">${car.year} ${car.make} ${car.model}</h3>
+                            <div class="text-lg space-y-1">
+                                <p class="text-gray-400">Start Price: <span class="text-red-500 font-semibold">$${car.startPrice ? car.startPrice.toLocaleString() : 'N/A'}</span></p>
+                                <p class="text-gray-200 font-bold">Current Bid: <span class="text-green-400">$${car.currentBid ? car.currentBid.toLocaleString() : 'N/A'}</span></p>
+                                <p class="text-gray-400">Time Left: <span class="font-medium text-white">${timeRemaining}</span></p>
+                            </div>
+                            <button class="mt-4 w-full bg-red-700 text-white py-2 rounded-lg font-bold hover:bg-red-600 transition duration-200">
+                                Place Bid
+                            </button>
+                            <p class="text-xs text-gray-500 mt-2">Lister: ${car.listerId ? car.listerId.substring(0, 8) : 'Unknown'}...</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            listContainer.innerHTML = `<div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">${auctionCards}</div>`;
+        };
+
+        /**
+         * Converts ISO string to a user-friendly time remaining string.
+         * @param {Date} endDate - The auction end date.
+         */
+        const formatTimeRemaining = (endDate) => {
+            const now = new Date();
+            const diff = endDate.getTime() - now.getTime();
+
+            if (diff <= 0) return "Auction Ended";
+
+            const totalSeconds = Math.floor(diff / 1000);
+            const days = Math.floor(totalSeconds / (3600 * 24));
+            const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+            let parts = [];
+            if (days > 0) parts.push(`${days}d`);
+            if (hours > 0) parts.push(`${hours}h`);
+            parts.push(`${minutes}m`); 
+
+            // Prevent displaying just "0m" if less than a minute is left
+            if (parts.length === 1 && totalSeconds < 60 && totalSeconds > 0) {
+                 return `${totalSeconds}s`;
+            }
+
+            return parts.join(' ');
+        };
+
+
+        // Simple client-side routing based on URL hash
+        const navigateTo = (hash) => {
+            document.querySelectorAll('.view').forEach(view => view.classList.add('hidden'));
+            const target = document.getElementById(hash + '-view');
+            if (target) {
+                target.classList.remove('hidden');
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    if (link.getAttribute('href') === `#${hash}`) {
+                        link.classList.add('bg-red-700/50');
+                    } else {
+                        link.classList.remove('bg-red-700/50');
+                    }
+                });
+                // Ensure the body scrolls to the top when navigating
+                window.scrollTo(0, 0);
+            } else {
+                // Default to home view
+                document.getElementById('home-view').classList.remove('hidden');
+            }
+        };
+
+        const handleHashChange = () => {
+            const hash = window.location.hash.substring(1) || 'home';
+            navigateTo(hash);
+        };
+
+        // Modal Control
+        const openModal = () => {
+            document.getElementById('list-car-modal').classList.remove('hidden');
+        };
+
+        const closeModal = () => {
+            document.getElementById('list-car-modal').classList.add('hidden');
+            document.getElementById('list-car-form').reset();
+        };
+
+
+        // 4. EVENT LISTENERS AND SETUP
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initial routing setup
+            window.addEventListener('hashchange', handleHashChange);
+            handleHashChange(); // Load initial view
+
+            // Navigation links
+            document.getElementById('nav-home').addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.hash = 'home';
+            });
+            document.getElementById('nav-auction').addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.hash = 'auction-listings';
+            });
+            document.getElementById('open-list-modal').addEventListener('click', openModal);
+            document.getElementById('close-modal-btn').addEventListener('click', closeModal);
+            document.getElementById('list-car-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'list-car-modal') closeModal();
+            });
+
+            // Form Submission Handler
+            document.getElementById('list-car-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const carData = Object.fromEntries(formData.entries());
+
+                if (isNaN(parseFloat(carData.year)) || isNaN(parseFloat(carData.startPrice))) {
+                     showMessage("Year and Starting Price must be valid numbers.", 'error');
+                     return;
+                }
+
+                listCarForAuction(carData);
+            });
+        });
+
+        // Expose functions for buttons outside module if necessary, but keep logic inside.
+        window.openModal = openModal;
+
+    </script>
+    <style>
+        /* Custom styling for full-screen video */
+        .video-container video {
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -1;
+        }
+        .hero-section {
+            /* Adjust height for mobile compatibility when content is present below */
+            height: 90vh; 
+            min-height: 500px;
+        }
+        /* Custom scrollbar for dark theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #dc2626; /* red-600 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background-color: #1f2937; /* gray-800 */
+        }
+    </style>
+</head>
+<body class="font-sans bg-gray-900 text-white min-h-screen">
+    
+    <!-- Application Message Container (Custom Alert) -->
+    <div id="app-message" class="fixed top-20 right-4 z-50 transition-opacity duration-300 opacity-0"></div>
+
+    <!-- NAVIGATION BAR -->
+    <nav class="sticky top-0 bg-gray-800/90 backdrop-blur-sm shadow-xl z-30 p-4">
+        <div class="flex justify-between items-center max-w-7xl mx-auto">
+            <div class="text-2xl font-extrabold text-red-600">
+                MUSCLE MARKET
+            </div>
+            <div class="flex space-x-4">
+                <a id="nav-home" href="#home" class="nav-link px-3 py-2 rounded-full font-medium transition-colors duration-200 hover:bg-red-700/50">Home</a>
+                <a id="nav-auction" href="#auction-listings" class="nav-link px-3 py-2 rounded-full font-medium transition-colors duration-200 hover:bg-red-700/50">Auctions</a>
+                <button id="open-list-modal" class="px-4 py-2 bg-red-600 rounded-full font-bold shadow-md hover:bg-red-500 transition duration-200">
+                    List Your Car
+                </button>
+            </div>
+        </div>
+        <p id="user-id-display" class="text-xs text-gray-400 mt-2 text-center"></p>
+    </nav>
+
+    <!-- MAIN APP CONTAINER FOR VIEWS -->
+    <div id="app-container">
+
+        <!-- 1. HOME VIEW (Hero + Content) -->
+        <div id="home-view" class="view">
+            <!-- HERO SECTION (from previous request) -->
+            <header id="hero-section" class="hero-section relative overflow-hidden flex items-center justify-center">
+                <div class="video-container absolute inset-0 -z-10">
+                    <!-- PLACEHOLDER: Replace 'your-challenger-video.mp4' with your actual video source -->
+                    <video 
+                        autoplay 
+                        loop 
+                        muted 
+                        playsinline
+                        poster="https://placehold.co/1920x1080/1a1a1a/ffffff?text=Dodge+Challenger+Video"
+                        class="absolute inset-0 w-full h-full object-cover">
+                        <source src="your-challenger-video.mp4" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+                <div class="absolute inset-0 bg-black opacity-60"></div>
+
+                <div class="relative z-10 text-center p-6 md:p-12 max-w-4xl mx-auto">
+                    <div class="mb-8 md:mb-12">
+                        <!-- LOGO PLACEHOLDER -->
+                        <svg class="mx-auto w-32 h-32 md:w-48 md:h-48 text-red-600 mb-4 animate-pulse" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2L2 22h20L12 2zm0 18L5 6h14L12 20z"/>
+                            <text x="12" y="15" font-family="Inter" font-size="10" text-anchor="middle" fill="white" font-weight="bold">M-M</text>
+                        </svg>
+                        <h1 class="text-6xl md:text-8xl font-extrabold text-white tracking-tight uppercase leading-none rounded-lg p-2">
+                            <span class="bg-red-700 px-3 py-1 rounded-xl shadow-2xl">Muscle</span> Defined
+                        </h1>
+                    </div>
+                    <p class="text-xl md:text-3xl text-gray-200 mb-10 mt-4 max-w-2xl mx-auto drop-shadow-lg">
+                        Experience the raw power and iconic style of the muscle car era.
+                    </p>
+                    <a href="#auction-listings" class="px-8 py-3 text-lg font-semibold bg-red-700 text-white rounded-full shadow-2xl hover:bg-red-600 transition duration-300 transform hover:scale-105">
+                        View Live Auctions
+                    </a>
+                </div>
+            </header>
+
+            <!-- HOME PAGE CONTENT SECTION (New content for Sarkinmota Autos) -->
+            <main class="max-w-7xl mx-auto p-8 md:p-12">
+
+                <!-- ABOUT SECTION -->
+                <section class="text-center mb-16 border-b border-gray-700 pb-10">
+                    <h2 class="text-5xl font-extrabold text-red-600 mb-4">Welcome to Sarkinmota Autos</h2>
+                    <p class="text-gray-300 text-xl max-w-3xl mx-auto">
+                        We are the premier destination for buying and selling high-performance, classic, and exotic muscle cars. Our platform connects passionate enthusiasts with verified, top-tier vehicles through transparent, real-time auctions.
+                    </p>
+                </section>
+
+                <!-- FEATURES HIGHLIGHTS GRID -->
+                <section class="mb-16">
+                    <h3 class="text-4xl font-bold text-white text-center mb-10">Why Choose Us?</h3>
+                    <div class="grid md:grid-cols-3 gap-8">
+                        
+                        <!-- Feature 1: Live Auctions -->
+                        <div class="bg-gray-800 p-6 rounded-xl shadow-2xl border-t-4 border-red-700 hover:bg-gray-700 transition duration-300">
+                            <svg class="w-10 h-10 text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                            <h4 class="text-2xl font-bold mb-2 text-white">Real-Time Auctions</h4>
+                            <p class="text-gray-400">Bid instantly on the rarest muscle cars, from vintage classics to modern beasts. The thrill of the auction, right here.</p>
+                            <a href="#auction-listings" class="block mt-4 text-red-500 font-semibold hover:text-red-400">View Auctions &rarr;</a>
+                        </div>
+
+                        <!-- Feature 2: Verified Listings -->
+                        <div class="bg-gray-800 p-6 rounded-xl shadow-2xl border-t-4 border-red-700 hover:bg-gray-700 transition duration-300">
+                            <svg class="w-10 h-10 text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-9.618 3.04A12.023 12.023 0 0012 21.025 12.023 12.023 0 0021.618 6.984z"></path></svg>
+                            <h4 class="text-2xl font-bold mb-2 text-white">Quality Assurance</h4>
+                            <p class="text-gray-400">Every car listed on Sarkinmota Autos is thoroughly vetted for authenticity and condition before auction.</p>
+                            <span class="block mt-4 text-gray-500 font-semibold">Learn More</span>
+                        </div>
+
+                        <!-- Feature 3: Seamless Selling -->
+                        <div class="bg-gray-800 p-6 rounded-xl shadow-2xl border-t-4 border-red-700 hover:bg-gray-700 transition duration-300">
+                            <svg class="w-10 h-10 text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-2.485 0-4.5 2.015-4.5 4.5S9.515 17 12 17s4.5-2.015 4.5-4.5S14.485 8 12 8z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19c-3.87 0-7.31-2.08-9-5.18l.84-1.7c1.47 2.76 4.67 4.58 8.16 4.58s6.69-1.82 8.16-4.58l.84 1.7c-1.69 3.1-5.13 5.18-9 5.18zM12 5c3.87 0 7.31 2.08 9 5.18l-.84 1.7c-1.47-2.76-4.67-4.58-8.16-4.58s-6.69 1.82-8.16 4.58l-.84-1.7C4.69 7.08 8.13 5 12 5z"></path></svg>
+                            <h4 class="text-2xl font-bold mb-2 text-white">Sell With Confidence</h4>
+                            <p class="text-gray-400">List your vehicle easily and reach a global network of serious, pre-vetted buyers. Maximize your return.</p>
+                            <button onclick="window.openModal()" class="block mt-4 text-red-500 font-semibold hover:text-red-400">Start Listing &rarr;</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- FULL WIDTH CTA BAR -->
+                <section class="bg-red-800 p-8 rounded-xl shadow-2xl text-center">
+                    <h3 class="text-4xl font-extrabold mb-3">Ready to Feel the Power?</h3>
+                    <p class="text-lg text-red-200 mb-6">Join the Muscle Market community today and start bidding on your dream machine.</p>
+                    <a href="#auction-listings" class="px-10 py-4 text-xl font-bold bg-white text-gray-900 rounded-full shadow-lg hover:bg-gray-200 transition duration-300 transform hover:scale-105">
+                        Start Your Engine
+                    </a>
+                </section>
+
+            </main>
+            <!-- END HOME PAGE CONTENT -->
+        </div>
+
+        <!-- 2. AUCTION LISTINGS VIEW -->
+        <div id="auction-listings-view" class="view hidden p-8 md:p-12 max-w-7xl mx-auto">
+            <div class="flex justify-between items-center mb-10 border-b-2 border-red-700 pb-4">
+                <h2 class="text-5xl font-extrabold text-white">Live Muscle Car Auctions</h2>
+                <button onclick="window.openModal()" class="px-6 py-3 text-lg font-semibold bg-red-700 text-white rounded-xl shadow-lg hover:bg-red-600 transition duration-200">
+                    + Start New Auction
+                </button>
+            </div>
+            
+            <!-- Auction Cards Render Here -->
+            <div id="auction-list-container" class="min-h-[400px]">
+                <p class="text-center text-gray-500 py-10">Loading auctions...</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- LIST CAR MODAL (UNMODIFIED) -->
+    <div id="list-car-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-xl p-8 max-w-lg w-full shadow-2xl border-2 border-red-700/50" role="dialog" aria-modal="true">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-3xl font-bold text-red-500">List Your Muscle Car</h3>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-white transition duration-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <form id="list-car-form" class="space-y-4">
+                <div>
+                    <label for="make" class="block text-sm font-medium text-gray-300 mb-1">Make (e.g., Dodge, Ford)</label>
+                    <input type="text" id="make" name="make" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-red-500 focus:border-red-500">
+                </div>
+                <div>
+                    <label for="model" class="block text-sm font-medium text-gray-300 mb-1">Model (e.g., Challenger, Mustang)</label>
+                    <input type="text" id="model" name="model" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-red-500 focus:border-red-500">
+                </div>
+                <div>
+                    <label for="year" class="block text-sm font-medium text-gray-300 mb-1">Year</label>
+                    <input type="number" id="year" name="year" required min="1950" max="2025" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-red-500 focus:border-red-500">
+                </div>
+                <div>
+                    <label for="startPrice" class="block text-sm font-medium text-gray-300 mb-1">Starting Price (USD)</label>
+                    <input type="number" id="startPrice" name="startPrice" required min="1000" step="100" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-red-500 focus:border-red-500">
+                </div>
+                
+                <p class="text-sm text-gray-400 pt-2">Auction duration will be set to 7 days automatically.</p>
+
+                <button type="submit" class="w-full mt-6 py-3 bg-red-600 text-white font-bold rounded-lg shadow-xl hover:bg-red-500 transition duration-200">
+                    Confirm Listing
+                </button>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>
