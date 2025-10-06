@@ -351,19 +351,22 @@
         <div id="home-view" class="view">
             <!-- HERO SECTION (from previous request) -->
             <header id="hero-section" class="hero-section relative overflow-hidden flex items-center justify-center">
-                <div class="video-container absolute inset-0 -z-10">
-                    <!-- PLACEHOLDER: Replace 'your-challenger-video.mp4' with your actual video source -->
-                    <video 
-                        autoplay 
-                        loop 
-                        muted 
-                        playsinline
-                        poster="https://placehold.co/1920x1080/1a1a1a/ffffff?text=Dodge+Challenger+Video"
-                        class="absolute inset-0 w-full h-full object-cover">
-                        <source src="your-challenger-video.mp4" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                </div>
+                <div class="image-container absolute inset-0 -z-10 overflow-hidden relative">
+  <img src="your-image.jpg" class="w-full h-full object-cover">
+  <div class="shine absolute inset-0"></div>
+</div>
+
+<style>
+.shine {
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: shine 8s linear infinite;
+}
+@keyframes shine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+</style>
                 <div class="absolute inset-0 bg-black opacity-60"></div>
 
                 <div class="relative z-10 text-center p-6 md:p-12 max-w-4xl mx-auto">
