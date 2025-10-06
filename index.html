@@ -351,24 +351,28 @@
         <div id="home-view" class="view">
             <!-- HERO SECTION (from previous request) -->
             <header id="hero-section" class="hero-section relative overflow-hidden flex items-center justify-center">
-                <div class="image-container absolute inset-0 -z-10 overflow-hidden relative">
-  <img src="IMG_20251006_150623.jpg" class="w-full h-full object-cover">
-  <div class="shine absolute inset-0"></div>
+                <!-- HERO BACKGROUND IMAGE WITH ANIMATION -->
+<div class="absolute inset-0 -z-10 overflow-hidden">
+  <img 
+    src="IMG_20251006_150623.jpg" 
+    alt="Background" 
+    class="w-full h-full object-cover animate-kenburns brightness-90"
+  >
+  <div class="absolute inset-0 bg-black/40"></div> <!-- optional overlay for contrast -->
 </div>
 
 <style>
-.shine {
-  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
-  transform: translateX(-100%);
-  animation: shine 8s linear infinite;
+@keyframes kenburns {
+  0% { transform: scale(1) translate(0, 0); }
+  50% { transform: scale(1.1) translate(-3%, -3%); }
+  100% { transform: scale(1.2) translate(3%, 3%); }
 }
-@keyframes shine {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+
+.animate-kenburns {
+  animation: kenburns 25s ease-in-out infinite alternate;
+  transform-origin: center;
 }
 </style>
-                <div class="absolute inset-0 bg-black opacity-60"></div>
-
                 <div class="relative z-10 text-center p-6 md:p-12 max-w-4xl mx-auto">
                     <div class="mb-8 md:mb-12">
                         <!-- LOGO PLACEHOLDER -->
