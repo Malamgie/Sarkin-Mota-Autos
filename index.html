@@ -3,918 +3,407 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Villa Agency Template Imitation</title>
+    <title>Villa Agency Template - Exact Tailwind Recreation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    
     <style>
-        /* CSS starts here */
-
+        /* Custom colors and configuration for closer imitation */
         :root {
-            --primary-color: #ee626b; /* Orange-Red accent */
+            --primary-color: #ee626b; /* The accent red/orange */
             --secondary-color: #1e1e1e; /* Dark text */
             --light-text: #7a7a7a;
-            --white: #ffffff;
             --light-bg: #f7f7f7;
-            --header-height: 80px;
-            --font-poppins: 'Poppins', sans-serif;
-            --font-roboto: 'Roboto', sans-serif;
+            --dark-bg: #2a2a2a;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: var(--font-poppins);
-            line-height: 1.6;
-            color: var(--secondary-color);
-            background-color: var(--white);
-        }
-
-        a {
-            text-decoration: none;
-            color: var(--secondary-color);
-            transition: color 0.3s;
-        }
-
-        a:hover {
-            color: var(--primary-color);
-        }
-
-        /* Utility Classes */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 15px;
-        }
-
-        .text-center { text-align: center; }
-
-        .btn-primary {
-            display: inline-block;
-            background-color: var(--primary-color);
-            color: var(--white);
-            padding: 12px 25px;
-            border-radius: 25px;
-            font-weight: 500;
-            text-transform: uppercase;
-            font-size: 14px;
-            letter-spacing: 0.5px;
-            transition: background-color 0.3s;
-        }
-
-        .btn-primary:hover {
-            background-color: #c94c53;
+        /* Extend Tailwind Configuration */
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': 'var(--primary-color)',
+                        'secondary': 'var(--secondary-color)',
+                        'light-text': 'var(--light-text)',
+                        'light-bg': 'var(--light-bg)',
+                        'dark-bg': 'var(--dark-bg)',
+                    },
+                    fontFamily: {
+                        'sans': ['Poppins', 'Roboto', 'sans-serif'],
+                    },
+                }
+            }
         }
         
-        /* --- Header & Navigation --- */
-        .header-top {
-            background-color: var(--white);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        
-        .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            height: var(--header-height);
-        }
+        /* Custom styles to achieve the exact look */
 
-        .logo-placeholder {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--primary-color);
-            /* Imitating the small, elevated look */
-            background-color: var(--light-bg); 
-            padding: 5px 10px;
-            border-radius: 5px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .nav-links {
-            list-style: none;
-            display: flex;
-            align-items: center;
-        }
-
-        .nav-links li {
-            margin-left: 20px;
-        }
-
-        .nav-links a {
-            font-size: 15px;
-            font-weight: 500;
-            text-transform: capitalize;
-            padding: 30px 0;
-        }
-
-        .nav-links a.active, .nav-links a:hover {
-            color: var(--primary-color);
-        }
-
-        .main-btn-nav {
-            margin-left: 30px;
-        }
-
-        /* --- Hero Section --- */
-        .hero {
-            background: url('https://via.placeholder.com/1920x800/292929/ffffff?text=Luxury+Villa+Agency+Image') no-repeat center center/cover;
-            height: 800px;
-            display: flex;
-            align-items: center;
+        /* Specific list style for the 'Best Apartment' section */
+        .feature-list li {
             position: relative;
-        }
-
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.3);
-        }
-
-        .hero-content {
-            position: relative;
-            z-index: 10;
-            max-width: 500px;
-            color: var(--white);
-        }
-
-        .hero-content h5 {
-            background-color: var(--primary-color);
-            display: inline-block;
-            padding: 5px 15px;
-            font-size: 14px;
-            font-weight: 500;
-            text-transform: uppercase;
-            margin-bottom: 20px;
-        }
-
-        .hero-content h1 {
-            font-size: 60px;
-            line-height: 1.2;
-            font-weight: 800;
-            margin-bottom: 30px;
-        }
-
-        /* --- Features Section --- */
-        .features-section {
-            padding: 80px 0;
-            margin-top: -100px; /* Pull it up to overlap the hero */
-            position: relative;
-            z-index: 50;
-        }
-        
-        .features-card {
-            background-color: var(--white);
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
-            border-radius: 10px;
-            padding: 40px;
-            display: flex;
-            gap: 40px;
-            align-items: center;
-        }
-        
-        .features-image {
-            flex-shrink: 0;
-        }
-        
-        .features-image img {
-            width: 300px;
-            height: 380px;
-            object-fit: cover;
-            border-radius: 10px;
-        }
-        
-        .features-details h2 {
-            font-size: 30px;
-            font-weight: 700;
+            padding-left: 20px;
             margin-bottom: 10px;
         }
-
-        .features-details p {
-            color: var(--light-text);
-            margin-bottom: 30px;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-        }
-        
-        .stat-item {
-            background-color: var(--light-bg);
-            padding: 20px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .stat-icon {
+        .feature-list li::before {
+            content: "\f058"; /* FontAwesome check circle solid */
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
             color: var(--primary-color);
-            font-size: 24px;
-        }
-        
-        .stat-item strong {
-            display: block;
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--secondary-color);
-        }
-
-        .stat-item span {
-            font-size: 14px;
-            color: var(--light-text);
-        }
-
-        /* --- Video/Interiors Section --- */
-        .video-section {
-            padding: 100px 0;
-        }
-
-        .video-wrapper {
-            background: url('https://via.placeholder.com/1200x500/282828/ffffff?text=Interior+Showcase+Video+Placeholder') no-repeat center center/cover;
-            padding: 150px 0;
-            border-radius: 10px;
-            text-align: center;
-            position: relative;
-        }
-
-        .video-wrapper::before {
-            content: '';
             position: absolute;
-            top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.4);
-            border-radius: 10px;
+            top: 2px;
         }
 
-        .video-content {
-            position: relative;
-            z-index: 10;
-            color: var(--white);
-        }
-
-        .video-content h2 {
-            font-size: 40px;
-            font-weight: 700;
-            margin-bottom: 20px;
-        }
-        
-        .play-button {
-            width: 60px;
-            height: 60px;
-            background-color: var(--primary-color);
-            border-radius: 50%;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            color: var(--white);
-            font-size: 20px;
-            cursor: pointer;
-            transition: transform 0.3s;
-        }
-
-        .play-button:hover {
-            transform: scale(1.1);
-        }
-        
-        .counter-grid {
-            display: flex;
-            justify-content: space-around;
-            background-color: var(--white);
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
-            padding: 30px;
-            border-radius: 10px;
-            margin-top: -60px; /* Overlap with video section */
-            position: relative;
-        }
-
-        .counter-item {
-            text-align: center;
-        }
-
-        .counter-item .number {
-            font-size: 36px;
-            font-weight: 700;
-            color: var(--primary-color);
-            margin-bottom: 5px;
-        }
-
-        .counter-item .text {
-            font-size: 15px;
-            color: var(--secondary-color);
-            font-weight: 500;
-        }
-
-        /* --- Search/Find Deal Section --- */
-        .search-deal-section {
-            padding: 100px 0;
-        }
-
-        .search-deal-header {
+        /* Specific styles for the Search/Deal details list */
+        .deal-detail-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 40px;
-        }
-
-        .search-deal-header h2 {
-            font-size: 36px;
-            font-weight: 700;
-        }
-
-        .search-tabs button {
-            background-color: var(--light-bg);
-            border: none;
-            padding: 10px 25px;
-            margin-left: 10px;
-            border-radius: 20px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        .search-tabs button.active {
-            background-color: var(--primary-color);
-            color: var(--white);
-        }
-
-        .search-content-wrapper {
-            display: flex;
-            gap: 40px;
-            align-items: flex-start;
-        }
-
-        .search-form-side {
-            width: 300px;
-            flex-shrink: 0;
-            background-color: var(--light-bg);
-            padding: 30px;
-            border-radius: 10px;
-        }
-
-        .search-form-side .form-group {
-            margin-bottom: 20px;
-        }
-
-        .search-form-side label {
-            display: block;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 5px;
-        }
-
-        .search-form-side select, 
-        .search-form-side input[type="text"],
-        .search-form-side input[type="number"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-family: var(--font-poppins);
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
             font-size: 15px;
         }
-
-        .search-details-side {
-            flex-grow: 1;
-            display: flex;
-            gap: 30px;
+        .deal-detail-item:last-child {
+            border-bottom: none;
         }
-
-        .search-image-holder {
-            flex-shrink: 0;
-        }
-
-        .search-image-holder img {
-            width: 320px;
-            height: 320px;
-            object-fit: cover;
-            border-radius: 10px;
-        }
-
-        .search-text-content {
-            padding-top: 10px;
-        }
-
-        .search-text-content h3 {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--primary-color);
-            margin-bottom: 15px;
-        }
-
-        .search-text-content p {
-            color: var(--light-text);
-            margin-bottom: 20px;
-        }
-
-        /* --- Property Grid Section --- */
-        .property-grid-section {
-            background-color: var(--light-bg);
-            padding: 100px 0;
-            text-align: center;
-        }
-
-        .property-grid-section h2 {
-            font-size: 36px;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-        
-        .property-grid-section p {
-            color: var(--light-text);
-            margin-bottom: 60px;
-        }
-
-        .property-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 30px;
-        }
-
-        .property-card {
-            background-color: var(--white);
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
-            transition: box-shadow 0.3s;
-        }
-
-        .property-card:hover {
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .property-image-holder {
-            position: relative;
-            height: 220px;
-        }
-
-        .property-image-holder img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .price-tag {
-            position: absolute;
-            bottom: 15px;
-            right: 15px;
-            background-color: var(--primary-color);
-            color: var(--white);
-            padding: 5px 15px;
-            border-radius: 20px;
+        .deal-detail-item strong {
             font-weight: 600;
         }
-
-        .property-info {
-            padding: 20px;
-            text-align: left;
-        }
-
-        .property-info h3 {
-            font-size: 18px;
-            font-weight: 600;
+        .deal-detail-item span {
             color: var(--secondary-color);
-            margin-bottom: 5px;
-        }
-
-        .property-info p {
-            font-size: 14px;
-            color: var(--light-text);
-            margin: 0 0 10px 0;
-        }
-
-        .details-list {
-            list-style: none;
-            padding-top: 10px;
-            border-top: 1px solid #eee;
-        }
-
-        .details-list li {
-            font-size: 14px;
-            color: var(--light-text);
-            margin-bottom: 5px;
-        }
-
-        /* --- Contact/Map Section --- */
-        .contact-section {
-            padding: 100px 0;
-        }
-
-        .contact-content-wrapper {
-            display: flex;
-            gap: 50px;
-            align-items: flex-start;
-        }
-
-        .map-info-side {
-            flex: 2;
-        }
-
-        .map-placeholder {
-            height: 400px;
-            background-color: #eee;
-            border-radius: 10px;
-            overflow: hidden;
-            position: relative;
-            margin-bottom: 30px;
-        }
-
-        .map-placeholder img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0.7;
-        }
-
-        .contact-info-grid {
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .contact-item {
-            display: flex;
-            align-items: center;
-            gap: 15px;
+            font-weight: 600;
         }
         
-        .contact-icon {
-            color: var(--primary-color);
-            font-size: 20px;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: var(--light-bg);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .contact-item span {
-            font-size: 16px;
-            font-weight: 500;
-        }
-
-        .contact-form-side {
-            flex: 1;
-            background-color: var(--light-bg);
-            padding: 30px;
-            border-radius: 10px;
-        }
-
-        .contact-form-side h2 {
-            font-size: 30px;
-            font-weight: 700;
-            margin-bottom: 25px;
-        }
-
-        .contact-form-side input[type="text"],
-        .contact-form-side input[type="email"],
-        .contact-form-side textarea {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-family: var(--font-poppins);
-            font-size: 15px;
-        }
-
-        .contact-form-side textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        /* --- Footer --- */
-        .footer {
-            background-color: var(--secondary-color);
-            color: var(--white);
-            padding: 30px 0;
-            font-size: 14px;
-        }
-
-        .footer a {
-            color: var(--primary-color);
-            font-weight: 500;
-        }
-
-        /* --- Responsive Design (Basic Mobile adjustments) --- */
-        @media (max-width: 992px) {
-            .navbar { padding: 0 15px; }
-            .nav-links { display: none; }
-            .hero-content h1 { font-size: 40px; }
-            
-            .features-card { flex-direction: column; text-align: center; }
-            .features-image img { width: 100%; max-width: 400px; height: auto; }
-            .stats-grid { grid-template-columns: 1fr; }
-            
-            .search-content-wrapper { flex-direction: column; }
-            .search-form-side { width: 100%; }
-            .search-details-side { flex-direction: column; }
-            .search-image-holder { margin: 0 auto; }
-
-            .property-grid { grid-template-columns: 1fr; }
-            
-            .contact-content-wrapper { flex-direction: column; }
-            .contact-info-grid { flex-direction: column; gap: 20px; }
-        }
     </style>
 </head>
 <body>
 
-    <header class="header-top">
-        <div class="container">
-            <nav class="navbar">
-                <div class="logo-placeholder">[YOUR LOGO]</div>
-                
-                <ul class="nav-links">
-                    <li><a href="#home" class="active">Home</a></li>
-                    <li><a href="#properties">Properties</a></li>
-                    <li><a href="#">Property Details</a></li>
-                    <li><a href="#">Contact Us</a></li>
-                    <li class="main-btn-nav"><a href="#" class="btn-primary"><i class="fa fa-calendar"></i> Schedule a Visit</a></li>
-                </ul>
+    <header class="shadow-sm sticky top-0 bg-white z-50">
+        <div class="container mx-auto px-4 md:px-0 h-20 flex justify-between items-center">
+            <div class="text-2xl font-extrabold text-primary bg-light-bg px-3 py-1 rounded-md uppercase tracking-wide shadow-sm">
+                [YOUR LOGO]
+            </div>
+            
+            <nav class="hidden lg:flex items-center space-x-6">
+                <a href="#home" class="text-secondary text-sm font-medium hover:text-primary transition duration-300 py-6 border-b-2 border-primary">Home</a>
+                <a href="#properties" class="text-secondary text-sm font-medium hover:text-primary transition duration-300 py-6 border-b-2 border-transparent hover:border-primary">Properties</a>
+                <a href="#details" class="text-secondary text-sm font-medium hover:text-primary transition duration-300 py-6 border-b-2 border-transparent hover:border-primary">Property Details</a>
+                <a href="#contact" class="text-secondary text-sm font-medium hover:text-primary transition duration-300 py-6 border-b-2 border-transparent hover:border-primary">Contact Us</a>
+                <a href="#" class="bg-primary text-white text-sm font-medium uppercase py-3 px-6 rounded-full hover:bg-red-700 transition duration-300 ml-6 flex items-center shadow-md">
+                    <i class="fa fa-calendar-alt mr-2"></i> Schedule a Visit
+                </a>
             </nav>
         </div>
     </header>
 
-    <section class="hero" id="home">
-        <div class="container">
-            <div class="hero-content">
-                <h5>Canada</h5>
-                <h1>HURRY! GET THE BEST VILLA FOR YOU</h1>
+    <section id="home" class="h-[750px] flex items-center relative" 
+        style="background: url('https://via.placeholder.com/1920x750/333333/ffffff?text=Luxury+Villa+Agency+Hero') no-repeat center center/cover;">
+        <div class="absolute inset-0 bg-black opacity-30"></div>
+        <div class="container mx-auto px-4 relative z-10">
+            <div class="max-w-xl text-white">
+                <h5 class="bg-primary inline-block py-1 px-4 text-sm font-medium uppercase mb-5 shadow-lg">Toronto, Canada</h5>
+                <h1 class="text-6xl font-extrabold leading-tight mb-8">HURRY!<br>GET THE BEST<br>VILLA FOR YOU</h1>
             </div>
         </div>
     </section>
 
-    <section class="features-section">
-        <div class="container">
-            <div class="features-card">
-                <div class="features-image">
-                    <img src="https://via.placeholder.com/300x380/606060/ffffff?text=Best+Apartment" alt="Best Apartment">
-                </div>
-                <div class="features-details">
-                    <h2>Best Apartment &amp; Sea view</h2>
-                    <p class="mb-4">Get the **best villa** website template in HTML CSS and JavaScript. Villa Agency is a pro version of <a href="#" style="color:var(--primary-color);">CSS Template</a> for your real estate business. This template is designed by <a href="#" style="color:var(--primary-color);">TemplateMo</a>.</p>
-                    
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <i class="fa fa-home stat-icon"></i>
-                            <div><strong>250 m2</strong><span>Total Flat Space</span></div>
-                        </div>
-                        <div class="stat-item">
-                            <i class="fa fa-handshake stat-icon"></i>
-                            <div><strong>Contract</strong><span>Contract Ready</span></div>
-                        </div>
-                        <div class="stat-item">
-                            <i class="fa fa-credit-card stat-icon"></i>
-                            <div><strong>Payment</strong><span>Payment Process</span></div>
-                        </div>
-                        <div class="stat-item">
-                            <i class="fa fa-bed stat-icon"></i>
-                            <div><strong>3</strong><span>Bedrooms</span></div>
-                        </div>
-                        <div class="stat-item">
-                            <i class="fa fa-bath stat-icon"></i>
-                            <div><strong>2</strong><span>Bathrooms</span></div>
-                        </div>
-                        <div class="stat-item">
-                            <i class="fa fa-calendar stat-icon"></i>
-                            <div><strong>2024</strong><span>Ready by</span></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="video-section">
-        <div class="container">
-            <div class="video-wrapper">
-                <div class="video-content">
-                    <h2>Get Closer View &amp; Different Feeling</h2>
-                    <div class="play-button" onclick="alert('Playing a video... (Placeholder)')">
-                        <i class="fa fa-play"></i>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="counter-grid">
-                <div class="counter-item">
-                    <div class="number" id="c-buildings">34</div>
-                    <div class="text">Buildings Finished Now</div>
-                </div>
-                <div class="counter-item">
-                    <div class="number" id="c-years">12</div>
-                    <div class="text">Years Experience</div>
-                </div>
-                <div class="counter-item">
-                    <div class="number" id="c-awards">24</div>
-                    <div class="text">Awards Won 2023</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="search-deal-section">
-        <div class="container">
-            <div class="search-deal-header">
-                <h2>Find Your Best Deal Right Now!</h2>
-                <div class="search-tabs" id="searchTabs">
-                    <button class="active" data-tab="apartment">Apartment</button>
-                    <button data-tab="villa">Villa</button>
-                    <button data-tab="penthouse">Penthouse</button>
-                </div>
-            </div>
-
-            <div class="search-content-wrapper">
-                <div class="search-form-side">
-                    <div class="form-group">
-                        <label for="area">Total Area</label>
-                        <select id="area">
-                            <option>100m2</option>
-                            <option>150m2</option>
-                            <option>200m2</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="floor">Number of Floors</label>
-                        <select id="floor">
-                            <option>1</option>
-                            <option>2</option>
-                            <option>3</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="rooms">Number of Rooms</label>
-                        <select id="rooms">
-                            <option>4</option>
-                            <option>5</option>
-                            <option>6</option>
-                        </select>
-                    </div>
-                    <a href="#" class="btn-primary" style="width: 100%; text-align: center;">Search Now</a>
-                </div>
-
-                <div class="search-details-side">
-                    <div class="search-image-holder">
-                        <img src="https://via.placeholder.com/320x320/606060/ffffff?text=Current+Deal" alt="Current Deal">
-                    </div>
-                    <div class="search-text-content">
-                        <h3>Extra Info About Apartment</h3>
-                        <p>You can find our current listings, which are perfect for you and your family! Don't miss out on this deal, it's one of the best around. We offer free consultation and flexible payment plans.</p>
-                        <div style="font-size: 14px; margin-bottom: 10px;">
-                            <strong style="color:var(--primary-color);">Address:</strong> Sunny Isles Beach, FL 33160, United States
-                        </div>
-                        <div style="font-size: 14px; margin-bottom: 10px;">
-                            <strong style="color:var(--primary-color);">Area:</strong> 150 m2
-                        </div>
-                        <div style="font-size: 14px; margin-bottom: 10px;">
-                            <strong style="color:var(--primary-color);">Floor:</strong> 15
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="property-grid-section" id="properties">
-        <div class="container">
-            <h2>We Provide The Best Property You Like</h2>
-            <p>Find the best one for you and your family.</p>
-            
-            <div class="property-grid">
-                <div class="property-card">
-                    <div class="property-image-holder">
-                        <img src="https://via.placeholder.com/370x220/3d3d3d/ffffff?text=Property+1" alt="Property 1">
-                        <span class="price-tag">$2,264,000</span>
-                    </div>
-                    <div class="property-info">
-                        <h3>Apartment</h3>
-                        <p>18 New Street Miami, OR 97219</p>
-                        <ul class="details-list">
-                            <li><i class="fa fa-bed" style="color: var(--primary-color);"></i> 4 Beds</li>
-                            <li><i class="fa fa-bath" style="color: var(--primary-color);"></i> 3 Baths</li>
-                            <li><i class="fa fa-ruler-combined" style="color: var(--primary-color);"></i> 1,600 sqft</li>
-                        </ul>
-                        <a href="#" class="btn-primary" style="padding: 10px 20px; font-size: 14px; margin-top: 15px;">Schedule a Visit</a>
-                    </div>
-                </div>
-
-                <div class="property-card">
-                    <div class="property-image-holder">
-                        <img src="https://via.placeholder.com/370x220/3d3d3d/ffffff?text=Property+2" alt="Property 2">
-                        <span class="price-tag">$1,180,000</span>
-                    </div>
-                    <div class="property-info">
-                        <h3>Villa House</h3>
-                        <p>543 North Bend River, FL 33280</p>
-                        <ul class="details-list">
-                            <li><i class="fa fa-bed" style="color: var(--primary-color);"></i> 6 Beds</li>
-                            <li><i class="fa fa-bath" style="color: var(--primary-color);"></i> 5 Baths</li>
-                            <li><i class="fa fa-ruler-combined" style="color: var(--primary-color);"></i> 3,500 sqft</li>
-                        </ul>
-                        <a href="#" class="btn-primary" style="padding: 10px 20px; font-size: 14px; margin-top: 15px;">Schedule a Visit</a>
-                    </div>
-                </div>
-
-                <div class="property-card">
-                    <div class="property-image-holder">
-                        <img src="https://via.placeholder.com/370x220/3d3d3d/ffffff?text=Property+3" alt="Property 3">
-                        <span class="price-tag">$5,500,000</span>
-                    </div>
-                    <div class="property-info">
-                        <h3>Penthouse</h3>
-                        <p>789 Highrise Tower, NY 10001</p>
-                        <ul class="details-list">
-                            <li><i class="fa fa-bed" style="color: var(--primary-color);"></i> 8 Beds</li>
-                            <li><i class="fa fa-bath" style="color: var(--primary-color);"></i> 6 Baths</li>
-                            <li><i class="fa fa-ruler-combined" style="color: var(--primary-color);"></i> 6,200 sqft</li>
-                        </ul>
-                        <a href="#" class="btn-primary" style="padding: 10px 20px; font-size: 14px; margin-top: 15px;">Schedule a Visit</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="contact-section">
-        <div class="container">
-            <h2 class="text-center" style="font-size: 36px; font-weight: 700; margin-bottom: 50px;">Get In Touch With Our Agents</h2>
-            
-            <div class="contact-content-wrapper">
-                <div class="map-info-side">
-                    <div class="map-placeholder">
-                        <img src="https://via.placeholder.com/700x400/dddddd/333333?text=Google+Map+Placeholder" alt="Map Location">
-                        <div style="position: absolute; bottom: 20px; left: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-                            <i class="fa fa-map-marker-alt" style="color: var(--primary-color);"></i> 24/7 Villa Agency
-                        </div>
+    <section class="pt-20 pb-20 -mt-24 relative z-20">
+        <div class="container mx-auto px-4">
+            <div class="bg-white shadow-xl rounded-xl p-10 flex flex-col lg:flex-row gap-10 items-center">
+                
+                <div class="flex-shrink-0 lg:w-1/2">
+                    <div class="relative mb-5">
+                        <span class="absolute top-0 left-0 bg-primary text-white text-xs font-semibold px-3 py-1 rounded-bl-lg rounded-tr-lg">FEATURED</span>
+                        <img src="https://via.placeholder.com/450x380/606060/ffffff?text=Best+Apartment+Interior" alt="Best Apartment" class="rounded-lg w-full h-[380px] object-cover">
                     </div>
                     
-                    <div class="contact-info-grid">
-                        <div class="contact-item">
-                            <div class="contact-icon"><i class="fa fa-phone"></i></div>
+                    <h2 class="text-3xl font-bold mb-3 text-secondary">Best Appartment &amp; Sea View</h2>
+                    
+                    <ul class="feature-list list-none text-light-text text-sm space-y-2 mt-5">
+                        <li class="pl-0"><strong class="text-secondary font-semibold">Best useful links ?</strong></li>
+                        <li class="pl-0 text-sm">Get the <strong class="text-secondary font-semibold">best villa</strong> website template in HTML CSS and Bootstrap for your business. TemplateMo provides you the <a href="#" class="text-primary font-medium">best free CSS templates</a> in the world. Please tell your friends about it.</li>
+                        <li class="pl-0"><strong class="text-secondary font-semibold">How does this work ?</strong></li>
+                        <li class="pl-0"><strong class="text-secondary font-semibold">Why is Villa Agency the best ?</strong></li>
+                    </ul>
+                </div>
+
+                <div class="flex-grow lg:w-1/2">
+                    <div class="grid grid-cols-2 gap-5">
+                        
+                        <div class="bg-light-bg p-6 rounded-xl flex items-center space-x-4 border-l-4 border-primary">
+                            <div class="w-12 h-12 bg-white rounded-full flex justify-center items-center text-primary shadow-md">
+                                <i class="fa fa-ruler-combined text-2xl"></i>
+                            </div>
                             <div>
-                                <span style="display: block; color: var(--light-text); font-size: 14px;">090-484-0123</span>
-                                <span style="display: block; font-weight: 700;">Phone Number</span>
+                                <strong class="block text-2xl font-extrabold text-secondary">250 m2</strong>
+                                <span class="text-light-text text-sm">Total Flat Space</span>
                             </div>
                         </div>
-                        <div class="contact-item">
-                            <div class="contact-icon"><i class="fa fa-envelope"></i></div>
+                        
+                        <div class="bg-light-bg p-6 rounded-xl flex items-center space-x-4 border-l-4 border-primary">
+                            <div class="w-12 h-12 bg-white rounded-full flex justify-center items-center text-primary shadow-md">
+                                <i class="fa fa-handshake text-2xl"></i>
+                            </div>
                             <div>
-                                <span style="display: block; color: var(--light-text); font-size: 14px;">info@villa.co</span>
-                                <span style="display: block; font-weight: 700;">Business Email</span>
+                                <strong class="block text-2xl font-extrabold text-secondary">Contract</strong>
+                                <span class="text-light-text text-sm">Contract Ready</span>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-light-bg p-6 rounded-xl flex items-center space-x-4 border-l-4 border-primary">
+                            <div class="w-12 h-12 bg-white rounded-full flex justify-center items-center text-primary shadow-md">
+                                <i class="fa fa-credit-card text-2xl"></i>
+                            </div>
+                            <div>
+                                <strong class="block text-2xl font-extrabold text-secondary">Payment</strong>
+                                <span class="text-light-text text-sm">Payment Process</span>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-light-bg p-6 rounded-xl flex items-center space-x-4 border-l-4 border-primary">
+                            <div class="w-12 h-12 bg-white rounded-full flex justify-center items-center text-primary shadow-md">
+                                <i class="fa fa-shield-alt text-2xl"></i>
+                            </div>
+                            <div>
+                                <strong class="block text-2xl font-extrabold text-secondary">Safety</strong>
+                                <span class="text-light-text text-sm">24/7 Under Control</span>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </section>
 
-                <div class="contact-form-side">
-                    <form onsubmit="handleContactSubmit(event)">
-                        <input type="text" placeholder="Your Name" required>
-                        <input type="email" placeholder="Your Email" required>
-                        <input type="text" placeholder="Subject" required>
-                        <textarea placeholder="Message" required></textarea>
-                        <button type="submit" class="btn-primary" style="border: none;">Send Message</button>
+    <section class="py-24">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-10">
+                <span class="text-primary text-xs font-semibold uppercase tracking-widest">[ VIDEO VIEW ]</span>
+                <h2 class="text-4xl font-bold text-secondary">Get Closer View &amp; Different Feeling</h2>
+            </div>
+
+            <div class="rounded-xl overflow-hidden relative bg-black shadow-xl">
+                <div class="py-32 md:py-40 text-center relative"
+                    style="background: url('https://via.placeholder.com/1200x500/282828/ffffff?text=Interior+Showcase+Video+Placeholder') no-repeat center center/cover;">
+                    <div class="absolute inset-0 bg-black opacity-30"></div>
+                    <div class="relative z-10 text-white flex justify-center items-center">
+                        <img src="https://via.placeholder.com/600x400/dddddd/333333?text=Interior+Shot" alt="Interior" class="rounded-xl shadow-2xl max-w-full h-auto w-4/5 md:w-3/5">
+                        <div class="absolute w-16 h-16 bg-primary rounded-full inline-flex justify-center items-center cursor-pointer hover:scale-110 transition duration-300 shadow-xl" 
+                             onclick="alert('Playing a video... (Placeholder)')">
+                            <i class="fa fa-play text-xl text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white shadow-xl rounded-xl p-6 flex flex-wrap justify-around -mt-16 relative z-10 mx-4 md:mx-10">
+                <div class="text-center p-3 relative">
+                    <div class="absolute top-1 right-1 w-4 h-4 bg-primary rounded-full"></div>
+                    <div class="text-4xl font-extrabold text-primary" id="c-buildings">0</div>
+                    <div class="text-base font-medium text-secondary">Buildings Finished Now</div>
+                </div>
+                <div class="text-center p-3 relative">
+                    <div class="absolute top-1 right-1 w-4 h-4 bg-primary rounded-full"></div>
+                    <div class="text-4xl font-extrabold text-primary" id="c-years">0</div>
+                    <div class="text-base font-medium text-secondary">Years Experience</div>
+                </div>
+                <div class="text-center p-3 relative">
+                    <div class="absolute top-1 right-1 w-4 h-4 bg-primary rounded-full"></div>
+                    <div class="text-4xl font-extrabold text-primary" id="c-awards">0</div>
+                    <div class="text-base font-medium text-secondary">Awards Won 2023</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-24" id="details">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-10">
+                <span class="text-primary text-xs font-semibold uppercase tracking-widest">[ BEST DEAL ]</span>
+                <h2 class="text-4xl font-bold text-secondary">Find Your Best Deal Right Now!</h2>
+            </div>
+            
+            <div class="flex justify-center space-x-3 mb-10" id="searchTabs">
+                <button class="tab-btn active bg-primary text-white py-2 px-6 rounded-full text-sm font-medium transition duration-300" data-tab="apartment">Appartment</button>
+                <button class="tab-btn bg-dark-bg text-white py-2 px-6 rounded-full text-sm font-medium hover:bg-primary transition duration-300" data-tab="villa">Villa House</button>
+                <button class="tab-btn bg-dark-bg text-white py-2 px-6 rounded-full text-sm font-medium hover:bg-primary transition duration-300" data-tab="penthouse">Penthouse</button>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-10">
+                <div class="lg:w-1/3 p-6 bg-light-bg rounded-xl shadow-inner">
+                    <div class="deal-detail-item"><strong>Total Flat Space</strong> <span>185 m2</span></div>
+                    <div class="deal-detail-item"><strong>Floor number</strong> <span>26th</span></div>
+                    <div class="deal-detail-item"><strong>Number of rooms</strong> <span>4</span></div>
+                    <div class="deal-detail-item"><strong>Parking Available</strong> <span>Yes</span></div>
+                    <div class="deal-detail-item"><strong>Payment Process</strong> <span>Bank</span></div>
+                </div>
+
+                <div class="lg:w-2/3">
+                    <img src="https://via.placeholder.com/700x400/606060/ffffff?text=Property+Interior+Deal" alt="Deal Interior" class="rounded-xl mb-6 shadow-lg">
+                    <h3 class="text-2xl font-bold text-secondary mb-3">Extra Info About Property</h3>
+                    <p class="text-light-text mb-8">Lorem ipsum dolor sit amet, consectetur adipiscing elit, do eiusmod tempor pack incididunt ut labore et dolore magna aliqua qui sed ipsum suspendisse.</p>
+                    <p class="text-light-text mb-8">When you need free CSS templates, you can simply type TemplateMo in any search engine website. In addition, you can type TemplateMo Portfolio, TemplateMo One Page Layouts, etc.</p>
+                    <a href="#" class="bg-primary text-white text-sm font-medium uppercase py-3 px-8 rounded-full hover:bg-red-700 transition duration-300 inline-flex items-center shadow-md">
+                        <i class="fa fa-calendar-alt mr-2"></i> Schedule a Visit
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="properties" class="bg-light-bg py-24">
+        <div class="container mx-auto px-4 text-center">
+            <span class="text-primary text-xs font-semibold uppercase tracking-widest">[ PROPERTIES ]</span>
+            <h2 class="text-4xl font-bold text-secondary mb-12">We Provide The Best Property You Like</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+                    <div class="relative h-64">
+                        <img src="https://via.placeholder.com/600x400/3d3d3d/ffffff?text=Property+1+Luxury+Villa" alt="Property 1" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6 text-left">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="bg-dark-bg text-white text-xs font-semibold px-3 py-1 rounded-full">Luxury Villa</span>
+                            <span class="text-primary text-lg font-bold">$2,284,000</span>
+                        </div>
+                        <p class="text-secondary text-lg font-bold mb-2">18 New Street Miami, OR 97219</p>
+                        <p class="text-light-text text-xs mb-4">Bedrooms: <strong class="text-secondary">6</strong> Bathrooms: <strong class="text-secondary">5</strong> Area: <strong class="text-secondary">545m2</strong> Floor: <strong class="text-secondary">3</strong> Parking: <strong class="text-secondary">8 spots</strong></p>
+                        <a href="#" class="bg-dark-bg text-white text-sm font-medium uppercase py-3 w-full block rounded-full text-center mt-4 hover:bg-primary transition duration-300">Schedule a Visit</a>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+                    <div class="relative h-64">
+                        <img src="https://via.placeholder.com/600x400/3d3d3d/ffffff?text=Property+2+Mid+Street" alt="Property 2" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6 text-left">
+                         <div class="flex justify-between items-center mb-2">
+                            <span class="bg-dark-bg text-white text-xs font-semibold px-3 py-1 rounded-full">Luxury Villa</span>
+                            <span class="text-primary text-lg font-bold">$1,180,000</span>
+                        </div>
+                        <p class="text-secondary text-lg font-bold mb-2">54 Mid Street Florida, OR 27001</p>
+                        <p class="text-light-text text-xs mb-4">Bedrooms: <strong class="text-secondary">6</strong> Bathrooms: <strong class="text-secondary">5</strong> Area: <strong class="text-secondary">450m2</strong> Floor: <strong class="text-secondary">3</strong> Parking: <strong class="text-secondary">8 spots</strong></p>
+                        <a href="#" class="bg-dark-bg text-white text-sm font-medium uppercase py-3 w-full block rounded-full text-center mt-4 hover:bg-primary transition duration-300">Schedule a Visit</a>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+                    <div class="relative h-64">
+                        <img src="https://via.placeholder.com/600x400/3d3d3d/ffffff?text=Property+3+Old+Street" alt="Property 3" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6 text-left">
+                         <div class="flex justify-between items-center mb-2">
+                            <span class="bg-dark-bg text-white text-xs font-semibold px-3 py-1 rounded-full">Luxury Villa</span>
+                            <span class="text-primary text-lg font-bold">$1,460,000</span>
+                        </div>
+                        <p class="text-secondary text-lg font-bold mb-2">26 Old Street Miami, OR 38540</p>
+                        <p class="text-light-text text-xs mb-4">Bedrooms: <strong class="text-secondary">5</strong> Bathrooms: <strong class="text-secondary">4</strong> Area: <strong class="text-secondary">225m2</strong> Floor: <strong class="text-secondary">3</strong> Parking: <strong class="text-secondary">10 spots</strong></p>
+                        <a href="#" class="bg-dark-bg text-white text-sm font-medium uppercase py-3 w-full block rounded-full text-center mt-4 hover:bg-primary transition duration-300">Schedule a Visit</a>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+                    <div class="relative h-64">
+                        <img src="https://via.placeholder.com/600x400/3d3d3d/ffffff?text=Property+4+Apartment" alt="Property 4" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6 text-left">
+                         <div class="flex justify-between items-center mb-2">
+                            <span class="bg-dark-bg text-white text-xs font-semibold px-3 py-1 rounded-full">Apartment</span>
+                            <span class="text-primary text-lg font-bold">$584,500</span>
+                        </div>
+                        <p class="text-secondary text-lg font-bold mb-2">12 New Street Miami, OR 12650</p>
+                        <p class="text-light-text text-xs mb-4">Bedrooms: <strong class="text-secondary">4</strong> Bathrooms: <strong class="text-secondary">3</strong> Area: <strong class="text-secondary">125m2</strong> Floor: <strong class="text-secondary">26th</strong> Parking: <strong class="text-secondary">2 cars</strong></p>
+                        <a href="#" class="bg-dark-bg text-white text-sm font-medium uppercase py-3 w-full block rounded-full text-center mt-4 hover:bg-primary transition duration-300">Schedule a Visit</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-24" id="contact">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-10">
+                <span class="text-primary text-xs font-semibold uppercase tracking-widest">[ CONTACT US ]</span>
+                <h2 class="text-4xl font-bold text-secondary">Get In Touch With Our Agents</h2>
+            </div>
+            
+            <div class="flex flex-col lg:flex-row gap-10">
+                <div class="lg:w-1/2">
+                    <div class="map-placeholder h-[450px] rounded-xl overflow-hidden mb-8 relative shadow-lg">
+                        <img src="https://via.placeholder.com/700x450/dddddd/333333?text=Sunny+Isles+Beach+Map" alt="Map Location" class="w-full h-full object-cover opacity-80">
+                        <div class="absolute top-4 left-4 bg-white p-3 rounded-lg shadow-xl text-sm font-semibold">
+                            Sunny Isles Beach, FL 33160, United States
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col md:flex-row justify-between space-y-4 md:space-y-0 md:space-x-4">
+                        <div class="flex-1 bg-light-bg p-4 rounded-xl shadow-inner flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-white rounded-full flex justify-center items-center text-primary shadow-md"><i class="fa fa-phone text-lg"></i></div>
+                            <div>
+                                <span class="block text-secondary text-lg font-bold">010-020-0340</span>
+                                <span class="block text-light-text text-sm">Phone number</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 bg-light-bg p-4 rounded-xl shadow-inner flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-white rounded-full flex justify-center items-center text-primary shadow-md"><i class="fa fa-envelope text-lg"></i></div>
+                            <div>
+                                <span class="block text-secondary text-lg font-bold">info@villa.co</span>
+                                <span class="block text-light-text text-sm">Business Email</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:w-1/2">
+                    <form onsubmit="handleContactSubmit(event)" class="space-y-6">
+                        <div class="bg-light-bg p-3 rounded-lg shadow-inner">
+                            <label for="full_name" class="block text-light-text text-sm">Full Name</label>
+                            <input type="text" id="full_name" placeholder="Your Name..." required class="w-full bg-light-bg p-1 text-secondary text-lg font-medium border-0 focus:ring-0">
+                        </div>
+                        <div class="bg-light-bg p-3 rounded-lg shadow-inner">
+                            <label for="email" class="block text-light-text text-sm">Email Address</label>
+                            <input type="email" id="email" placeholder="Your Email..." required class="w-full bg-light-bg p-1 text-secondary text-lg font-medium border-0 focus:ring-0">
+                        </div>
+                        <div class="bg-light-bg p-3 rounded-lg shadow-inner">
+                            <label for="subject" class="block text-light-text text-sm">Subject</label>
+                            <input type="text" id="subject" placeholder="Subject..." required class="w-full bg-light-bg p-1 text-secondary text-lg font-medium border-0 focus:ring-0">
+                        </div>
+                        <div class="bg-light-bg p-3 rounded-lg shadow-inner">
+                            <label for="message" class="block text-light-text text-sm">Message</label>
+                            <textarea id="message" placeholder="Your Message..." required class="w-full bg-light-bg p-1 text-secondary text-lg font-medium border-0 focus:ring-0 h-32 resize-none"></textarea>
+                        </div>
+                        <button type="submit" class="bg-dark-bg text-white text-sm font-medium uppercase py-4 w-full rounded-full hover:bg-primary transition duration-300 shadow-lg border-0">Send Message</button>
                     </form>
                 </div>
             </div>
         </div>
     </section>
 
-    <footer class="footer">
-        <div class="container text-center">
-            <p>Copyright © 2024 <a href="#">Villa Agency</a> Co., Ltd. All Rights Reserved. Design: <a href="https://templatemo.com" target="_blank">TemplateMo</a></p>
+    <footer class="bg-dark-bg text-white py-8">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-sm">
+                Copyright © 2024 <a href="#" class="text-primary font-medium">Villa Agency</a> Co., Ltd. All Rights Reserved. Design: <a href="https://templatemo.com" target="_blank" class="text-primary font-medium">TemplateMo</a>
+            </p>
         </div>
     </footer>
 
     <script>
         // Tab switching logic for the Search/Find Deal Section
         const searchTabs = document.getElementById('searchTabs');
-        const tabButtons = searchTabs.querySelectorAll('button');
+        const tabButtons = searchTabs.querySelectorAll('.tab-btn');
 
         tabButtons.forEach(button => {
             button.addEventListener('click', () => {
-                // Remove active class from all buttons
-                tabButtons.forEach(btn => btn.classList.remove('active'));
+                // Remove active styling from all buttons
+                tabButtons.forEach(btn => {
+                    btn.classList.remove('active', 'bg-primary', 'text-white');
+                    btn.classList.add('bg-dark-bg', 'text-white');
+                });
                 
-                // Add active class to the clicked button
-                button.classList.add('active');
+                // Add active styling to the clicked button
+                button.classList.add('active', 'bg-primary');
+                button.classList.remove('bg-dark-bg');
                 
-                // You would typically change the content here based on the selected tab (e.g., fetch data)
                 console.log(`Tab switched to: ${button.getAttribute('data-tab')}`);
             });
         });
@@ -923,15 +412,14 @@
         function handleContactSubmit(event) {
             event.preventDefault();
             alert("Message sent successfully! (Form submission is a placeholder)");
-            // In a real app, you would collect the form data and send it to a server.
         }
 
-        // Simple counter animation (for a touch of JS-driven imitation)
+        // Simple counter animation
         function animateCounter(id, endValue) {
             const element = document.getElementById(id);
             let start = 0;
             const duration = 2000;
-            const step = Math.ceil(endValue / (duration / 16)); // 60 FPS
+            const step = Math.ceil(endValue / (duration / 16));
 
             const timer = setInterval(() => {
                 start += step;
@@ -943,7 +431,7 @@
             }, 16);
         }
 
-        // Run the counters when the page loads (or when they enter the viewport in a real app)
+        // Run the counters when the page loads
         window.addEventListener('load', () => {
             animateCounter('c-buildings', 34);
             animateCounter('c-years', 12);
@@ -951,4 +439,4 @@
         });
     </script>
 </body>
-    </html>
+                            </html>
