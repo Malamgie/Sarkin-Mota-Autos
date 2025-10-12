@@ -3,631 +3,952 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sarkinmota Autos: Challenger Auction Portal</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, addDoc, onSnapshot, collection, query, serverTimestamp, setLogLevel, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // IMPORTANT: Global variables provided by the environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        let app, db, auth, userId = null;
-        let selectedAuctionId = null; 
-
-        // Utility function for error logging and custom alerts
-        const showMessage = (message, type = 'info') => {
-            const container = document.getElementById('app-message');
-            if (!container) return;
-
-            const baseClasses = 'p-4 mb-4 rounded-lg shadow-lg text-sm transition-opacity duration-300';
-            let typeClasses = '';
-
-            switch (type) {
-                case 'success':
-                    typeClasses = 'bg-green-100 text-green-800 border border-green-300';
-                    break;
-                case 'error':
-                    typeClasses = 'bg-red-100 text-red-800 border border-red-300';
-                    break;
-                case 'info':
-                default:
-                    typeClasses = 'bg-blue-100 text-blue-800 border border-blue-300';
-                    break;
-            }
-
-            container.innerHTML = `<div class="${baseClasses} ${typeClasses}">${message}</div>`;
-            container.style.opacity = '1';
-
-            setTimeout(() => {
-                container.style.opacity = '0';
-                setTimeout(() => container.innerHTML = '', 300);
-            }, 5000);
-        };
-
-        // 1. INITIALIZE FIREBASE AND AUTHENTICATION
-        if (firebaseConfig) {
-            setLogLevel('Debug');
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    userId = user.uid;
-                    document.getElementById('user-id-display').textContent = `User ID: ${userId}`;
-                    setupRealtimeAuctionListener();
-                } else {
-                    try {
-                        if (initialAuthToken) {
-                            await signInWithCustomToken(auth, initialAuthToken);
-                        } else {
-                            const anonymousUser = await signInAnonymously(auth);
-                            userId = anonymousUser.user.uid;
-                            document.getElementById('user-id-display').textContent = `User ID: ${userId} (Anonymous)`;
-                            setupRealtimeAuctionListener();
-                        }
-                    } catch (error) {
-                        console.error("Firebase Auth Error:", error);
-                        showMessage("Authentication failed. Check console for details.", 'error');
-                    }
-                }
-            });
-        } else {
-            showMessage("Firebase configuration missing. Auction features are disabled.", 'error');
-            userId = 'guest-' + Math.random().toString(36).substring(2, 9);
-            document.getElementById('user-id-display').textContent = `User ID: ${userId} (No DB)`;
-            
-            // 🌟 NEW: Initialize with placeholder data if Firebase is missing
-            auctions = initialCarListings; 
-            renderAuctionListings();
-        }
-
-
-        // 🌟 NEW: Initial Car Listings (Placeholders)
-        const initialCarListings = [
-            {
-                id: "sample-1",
-                make: "Mercedes",
-                model: "AMG G63",
-                year: 2023,
-                startPrice: 150000,
-                currentBid: 165500,
-                endTime: new Date(new Date().getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days left
-                listerId: "lister-g63",
-                imagePlaceholder: `https://placehold.co/400x300/10B981/ffffff?text=Mercedes+G63`,
-                // 🌟 PLACEHOLDER FOR FIREBASE 3D URL 🌟
-                model3dUrl: 'YOUR_FIREBASE_STORAGE_URL/g63.glb', 
-            },
-            {
-                id: "sample-2",
-                make: "Rolls Royce",
-                model: "Cullinan",
-                year: 2024,
-                startPrice: 350000,
-                currentBid: 380000,
-                endTime: new Date(new Date().getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days left
-                listerId: "lister-rr",
-                imagePlaceholder: `https://p.turbosquid.com/ts-thumb/er/xZAYa9/ag/mercedes_benz_g_class_free_download/png/1699677124/64x64/sharp_fit_q85/6b3316da772a4aebf96d71b98ebc8cf0cdaec5cd/mercedes_benz_g_class_free_download.jpg`,
-                // 🌟 PLACEHOLDER FOR FIREBASE 3D URL 🌟
-                model3dUrl: 'scene.gltf', 
-            }
-        ];
-
-        // 2. AUCTION DATA MANAGEMENT
-
-        const AUCTIONS_PATH = `artifacts/${appId}/public/data/auctions`;
-        let auctions = initialCarListings; // Use initial list as default if not connected to Firebase
-
-        /**
-         * Sets up a real-time listener for the public auction listings.
-         */
-        const setupRealtimeAuctionListener = () => {
-            if (!db) return;
-            const auctionCollectionRef = collection(db, AUCTIONS_PATH);
-            const q = query(auctionCollectionRef);
-
-            onSnapshot(q, (snapshot) => {
-                // If connected, overwrite the initial placeholder data
-                auctions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderAuctionListings();
-            }, (error) => {
-                console.error("Firestore Snapshot Error:", error);
-                showMessage("Could not load auction listings in real-time.", 'error');
-            });
-        };
-
-        // ... (listCarForAuction and placeBid functions remain the same) ...
-        const listCarForAuction = async (carData) => {
-            if (!db || !userId) {
-                showMessage("Cannot list car: User not authenticated or database not initialized.", 'error');
-                return;
-            }
-
-            try {
-                const newAuction = {
-                    ...carData,
-                    startPrice: parseFloat(carData.startPrice),
-                    currentBid: parseFloat(carData.startPrice), 
-                    lastBidderId: null, 
-                    startTime: serverTimestamp(),
-                    endTime: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(), 
-                    listerId: userId,
-                    status: 'Active',
-                    imagePlaceholder: `https://placehold.co/400x300/4F46E5/ffffff?text=${carData.year}+${carData.make}`,
-                    // 🌟 NEW: Add an empty 3D model URL
-                    model3dUrl: carData.model3dUrl || null,
-                };
-
-                const docRef = await addDoc(collection(db, AUCTIONS_PATH), newAuction);
-                showMessage("Your car has been listed for auction successfully!", 'success');
-                closeModal('list-car-modal'); 
-
-            } catch (e) {
-                console.error("Error adding document: ", e);
-                showMessage("Failed to list car. Please try again.", 'error');
-            }
-        };
-
-        const placeBid = async (auctionId, bidAmount) => {
-             // ... (Bid validation and Firestore update logic here - unchanged from previous step) ...
-             if (!db || !userId) {
-                showMessage("Cannot place bid: User not authenticated or database not initialized. (Using Sample Data)", 'error');
-                return;
-            }
-
-            const auction = auctions.find(a => a.id === auctionId);
-            if (!auction) {
-                showMessage("Auction not found.", 'error');
-                return;
-            }
-
-            // Bid validation
-            if (bidAmount <= auction.currentBid) {
-                showMessage(`Your bid of $${bidAmount.toLocaleString()} must be greater than the current bid of $${auction.currentBid.toLocaleString()}.`, 'error');
-                return;
-            }
-            if (auction.listerId === userId) {
-                 showMessage("You cannot bid on your own listing.", 'error');
-                return;
-            }
-            // Simple check for placeholder data
-            if (auctionId.startsWith("sample-")) {
-                 showMessage("Cannot place bid on sample data. Connect to Firebase to use real auctions.", 'info');
-                 return;
-            }
-            if (new Date(auction.endTime).getTime() < new Date().getTime()) {
-                 showMessage("The auction has already ended!", 'error');
-                return;
-            }
-
-
-            try {
-                const auctionRef = doc(db, AUCTIONS_PATH, auctionId);
-                await updateDoc(auctionRef, {
-                    currentBid: bidAmount,
-                    lastBidderId: userId,
-                    bidTime: serverTimestamp()
-                });
-
-                showMessage(`Successfully placed a bid of $${bidAmount.toLocaleString()}!`, 'success');
-                closeModal('bid-modal');
-
-            } catch (e) {
-                console.error("Error placing bid: ", e);
-                showMessage("Failed to place bid. Please try again.", 'error');
-            }
-        };
-
-
-        // 3. UI RENDERING AND ROUTING
-
-        /**
-         * Renders the current list of active auctions.
-         */
-        const renderAuctionListings = () => {
-            const listContainer = document.getElementById('auction-list-container');
-            if (!listContainer) return;
-
-            const sortedAuctions = auctions.sort((a, b) => new Date(a.endTime) - new Date(b.endTime));
-
-            if (auctions.length === 0) {
-                 // ... (No auctions content - unchanged) ...
-                listContainer.innerHTML = `
-                    <p class="text-xl text-gray-400 text-center py-10">
-                        No active auctions found. Be the first to list a vehicle!
-                    </p>
-                `;
-                return;
-            }
-
-            const auctionCards = sortedAuctions.map(car => {
-                const endDate = car.endTime ? new Date(car.endTime) : new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000);
-                const timeRemaining = formatTimeRemaining(endDate);
-                const isEnded = new Date().getTime() > endDate.getTime();
-                const bidButtonClass = isEnded ? 'bg-gray-500 cursor-not-allowed' : 'bg-red-700 hover:bg-red-600';
-                const buttonText = isEnded ? 'Auction Ended' : 'Place Bid';
-
-                // 🌟 NEW: 3D Button Logic
-                const is3DAvailable = car.model3dUrl && car.model3dUrl.includes('YOUR_FIREBASE_STORAGE_URL') === false;
-                const view3DButton = is3DAvailable ? `
-                    <button 
-                        class="w-full bg-blue-700 text-white py-2 rounded-lg font-bold hover:bg-blue-600 transition duration-200 mt-2"
-                        onclick="window.open3DModal('${car.make} ${car.model}', '${car.model3dUrl}')">
-                        View in 3D 📐
-                    </button>
-                ` : `
-                    <p class="text-xs text-center text-gray-500 mt-2">3D Model Placeholder</p>
-                `;
-
-                return `
-                    <div class="bg-gray-800 rounded-xl overflow-hidden shadow-2xl hover:shadow-red-700/50 transition duration-300">
-                        <img src="${car.imagePlaceholder}" alt="${car.make} ${car.model}" class="w-full h-48 object-cover">
-                        <div class="p-5">
-                            <h3 class="text-2xl font-bold text-white mb-2">${car.year} ${car.make} ${car.model}</h3>
-                            <div class="text-lg space-y-1">
-                                <p class="text-gray-400">Current Bid: <span class="text-green-400">$${car.currentBid ? car.currentBid.toLocaleString() : 'N/A'}</span></p>
-                                <p class="text-gray-400">Time Left: <span class="font-medium text-white">${timeRemaining}</span></p>
-                            </div>
-                            <button 
-                                class="mt-4 w-full text-white py-2 rounded-lg font-bold transition duration-200 ${bidButtonClass}"
-                                ${isEnded ? 'disabled' : `onclick="window.openBidModal('${car.id}', ${car.currentBid})"`}>
-                                ${buttonText}
-                            </button>
-                            ${view3DButton}
-                            <p class="text-xs text-gray-500 mt-2">Lister: ${car.listerId ? car.listerId.substring(0, 8) : 'Unknown'}...</p>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            listContainer.innerHTML = `<div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">${auctionCards}</div>`;
-        };
-
-        const formatTimeRemaining = (endDate) => {
-            // ... (formatTimeRemaining function - unchanged) ...
-             const now = new Date();
-            const diff = endDate.getTime() - now.getTime();
-
-            if (diff <= 0) return "Auction Ended";
-
-            const totalSeconds = Math.floor(diff / 1000);
-            const days = Math.floor(totalSeconds / (3600 * 24));
-            const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-
-            let parts = [];
-            if (days > 0) parts.push(`${days}d`);
-            if (hours > 0) parts.push(`${hours}h`);
-            parts.push(`${minutes}m`); 
-
-            if (parts.length === 1 && totalSeconds < 60 && totalSeconds > 0) {
-                 return `${totalSeconds}s`;
-            }
-
-            return parts.join(' ');
-        };
-
-
-        // Modal Control (modified to accept an ID)
-        const openModal = (modalId) => {
-            document.getElementById(modalId).classList.remove('hidden');
-        };
-
-        const closeModal = (modalId) => {
-            document.getElementById(modalId).classList.add('hidden');
-            if (modalId === 'list-car-modal') {
-                document.getElementById('list-car-form').reset();
-            }
-            if (modalId === 'bid-modal') {
-                 document.getElementById('bid-form').reset();
-                 selectedAuctionId = null; 
-            }
-            // 🌟 NEW: Clear 3D model source when closing
-            if (modalId === '3d-viewer-modal') {
-                 document.getElementById('3d-model-viewer').src = '';
-            }
-        };
-
-        const openBidModal = (auctionId, currentBid) => {
-             selectedAuctionId = auctionId;
-             document.getElementById('current-bid-display').textContent = `$${currentBid.toLocaleString()}`;
-             document.getElementById('bid-amount').min = currentBid + 100;
-             document.getElementById('bid-amount').placeholder = `Min $${(currentBid + 100).toLocaleString()}`;
-             openModal('bid-modal');
-        };
-        
-        // 🌟 NEW: 3D Model Modal Specific Opening function
-        const open3DModal = (title, modelUrl) => {
-            document.getElementById('3d-modal-title').textContent = title;
-            document.getElementById('3d-model-viewer').src = modelUrl;
-            openModal('3d-viewer-modal');
-        };
-
-
-        // 4. EVENT LISTENERS AND SETUP
-        document.addEventListener('DOMContentLoaded', () => {
-            // Initial routing setup
-            window.addEventListener('hashchange', handleHashChange);
-            handleHashChange(); 
-
-            // ... (Navigation links and List Car Modal Handlers - mostly unchanged) ...
-            document.getElementById('open-list-modal').addEventListener('click', () => openModal('list-car-modal'));
-            document.getElementById('close-list-modal-btn').addEventListener('click', () => closeModal('list-car-modal'));
-            document.getElementById('list-car-modal').addEventListener('click', (e) => {
-                if (e.target.id === 'list-car-modal') closeModal('list-car-modal');
-            });
-
-            // Bid Modal Handlers
-            document.getElementById('close-bid-modal-btn').addEventListener('click', () => closeModal('bid-modal'));
-            document.getElementById('bid-modal').addEventListener('click', (e) => {
-                if (e.target.id === 'bid-modal') closeModal('bid-modal');
-            });
-            
-            // 🌟 NEW: 3D Viewer Modal Handler
-            document.getElementById('close-3d-modal-btn').addEventListener('click', () => closeModal('3d-viewer-modal'));
-            document.getElementById('3d-viewer-modal').addEventListener('click', (e) => {
-                if (e.target.id === '3d-viewer-modal') closeModal('3d-viewer-modal');
-            });
-
-
-            // Form Submission Handler for LISTING (Updated to include 3D URL)
-            document.getElementById('list-car-form').addEventListener('submit', (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                const carData = Object.fromEntries(formData.entries());
-
-                if (isNaN(parseFloat(carData.year)) || isNaN(parseFloat(carData.startPrice))) {
-                     showMessage("Year and Starting Price must be valid numbers.", 'error');
-                     return;
-                }
-
-                listCarForAuction(carData);
-            });
-            
-            // Form Submission Handler for BIDDING (NEW)
-            document.getElementById('bid-form').addEventListener('submit', (e) => {
-                e.preventDefault();
-                if (!selectedAuctionId) {
-                    showMessage("Error: No active auction selected.", 'error');
-                    return;
-                }
-                const bidAmount = parseFloat(document.getElementById('bid-amount').value);
-                
-                if (isNaN(bidAmount) || bidAmount < parseFloat(document.getElementById('bid-amount').min)) {
-                    showMessage(`Please enter a valid bid amount greater than the minimum.`, 'error');
-                    return;
-                }
-
-                placeBid(selectedAuctionId, bidAmount);
-            });
-        });
-
-        // Expose functions for buttons outside module
-        window.openModal = (id) => openModal(id);
-        window.openBidModal = openBidModal; 
-        window.open3DModal = open3DModal; // 🌟 NEW: Expose 3D modal opener
-    </script>
+    <title>Villa Agency Template Imitation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        /* ... (Existing custom styles - unchanged) ... */
-        .hero-section { height: 90vh; min-height: 500px; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-thumb { background-color: #dc2626; border-radius: 4px; }
-        ::-webkit-scrollbar-track { background-color: #1f2937; }
-        @keyframes kenburns {
-            0% { transform: scale(1) translate(0, 0); }
-            50% { transform: scale(1.1) translate(-3%, -3%); }
-            100% { transform: scale(1.2) translate(3%, 3%); }
+        /* CSS starts here */
+
+        :root {
+            --primary-color: #ee626b; /* Orange-Red accent */
+            --secondary-color: #1e1e1e; /* Dark text */
+            --light-text: #7a7a7a;
+            --white: #ffffff;
+            --light-bg: #f7f7f7;
+            --header-height: 80px;
+            --font-poppins: 'Poppins', sans-serif;
+            --font-roboto: 'Roboto', sans-serif;
         }
-        .animate-kenburns {
-            animation: kenburns 25s ease-in-out infinite alternate;
-            transform-origin: center;
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
-        /* 🌟 NEW: Styling for model-viewer to ensure it takes up space and is interactive */
-        model-viewer {
+
+        body {
+            font-family: var(--font-poppins);
+            line-height: 1.6;
+            color: var(--secondary-color);
+            background-color: var(--white);
+        }
+
+        a {
+            text-decoration: none;
+            color: var(--secondary-color);
+            transition: color 0.3s;
+        }
+
+        a:hover {
+            color: var(--primary-color);
+        }
+
+        /* Utility Classes */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        .text-center { text-align: center; }
+
+        .btn-primary {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary:hover {
+            background-color: #c94c53;
+        }
+        
+        /* --- Header & Navigation --- */
+        .header-top {
+            background-color: var(--white);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: var(--header-height);
+        }
+
+        .logo-placeholder {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-color);
+            /* Imitating the small, elevated look */
+            background-color: var(--light-bg); 
+            padding: 5px 10px;
+            border-radius: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .nav-links {
+            list-style: none;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-links li {
+            margin-left: 20px;
+        }
+
+        .nav-links a {
+            font-size: 15px;
+            font-weight: 500;
+            text-transform: capitalize;
+            padding: 30px 0;
+        }
+
+        .nav-links a.active, .nav-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .main-btn-nav {
+            margin-left: 30px;
+        }
+
+        /* --- Hero Section --- */
+        .hero {
+            background: url('https://via.placeholder.com/1920x800/292929/ffffff?text=Luxury+Villa+Agency+Image') no-repeat center center/cover;
+            height: 800px;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            border-radius: 12px;
-            background-color: #1f2937; /* Gray-800 background */
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 10;
+            max-width: 500px;
+            color: var(--white);
+        }
+
+        .hero-content h5 {
+            background-color: var(--primary-color);
+            display: inline-block;
+            padding: 5px 15px;
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .hero-content h1 {
+            font-size: 60px;
+            line-height: 1.2;
+            font-weight: 800;
+            margin-bottom: 30px;
+        }
+
+        /* --- Features Section --- */
+        .features-section {
+            padding: 80px 0;
+            margin-top: -100px; /* Pull it up to overlap the hero */
+            position: relative;
+            z-index: 50;
+        }
+        
+        .features-card {
+            background-color: var(--white);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+            padding: 40px;
+            display: flex;
+            gap: 40px;
+            align-items: center;
+        }
+        
+        .features-image {
+            flex-shrink: 0;
+        }
+        
+        .features-image img {
+            width: 300px;
+            height: 380px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+        
+        .features-details h2 {
+            font-size: 30px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .features-details p {
+            color: var(--light-text);
+            margin-bottom: 30px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        
+        .stat-item {
+            background-color: var(--light-bg);
+            padding: 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .stat-icon {
+            color: var(--primary-color);
+            font-size: 24px;
+        }
+        
+        .stat-item strong {
+            display: block;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--secondary-color);
+        }
+
+        .stat-item span {
+            font-size: 14px;
+            color: var(--light-text);
+        }
+
+        /* --- Video/Interiors Section --- */
+        .video-section {
+            padding: 100px 0;
+        }
+
+        .video-wrapper {
+            background: url('https://via.placeholder.com/1200x500/282828/ffffff?text=Interior+Showcase+Video+Placeholder') no-repeat center center/cover;
+            padding: 150px 0;
+            border-radius: 10px;
+            text-align: center;
+            position: relative;
+        }
+
+        .video-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+        }
+
+        .video-content {
+            position: relative;
+            z-index: 10;
+            color: var(--white);
+        }
+
+        .video-content h2 {
+            font-size: 40px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        
+        .play-button {
+            width: 60px;
+            height: 60px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--white);
+            font-size: 20px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .play-button:hover {
+            transform: scale(1.1);
+        }
+        
+        .counter-grid {
+            display: flex;
+            justify-content: space-around;
+            background-color: var(--white);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
+            padding: 30px;
+            border-radius: 10px;
+            margin-top: -60px; /* Overlap with video section */
+            position: relative;
+        }
+
+        .counter-item {
+            text-align: center;
+        }
+
+        .counter-item .number {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .counter-item .text {
+            font-size: 15px;
+            color: var(--secondary-color);
+            font-weight: 500;
+        }
+
+        /* --- Search/Find Deal Section --- */
+        .search-deal-section {
+            padding: 100px 0;
+        }
+
+        .search-deal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .search-deal-header h2 {
+            font-size: 36px;
+            font-weight: 700;
+        }
+
+        .search-tabs button {
+            background-color: var(--light-bg);
+            border: none;
+            padding: 10px 25px;
+            margin-left: 10px;
+            border-radius: 20px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .search-tabs button.active {
+            background-color: var(--primary-color);
+            color: var(--white);
+        }
+
+        .search-content-wrapper {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
+        }
+
+        .search-form-side {
+            width: 300px;
+            flex-shrink: 0;
+            background-color: var(--light-bg);
+            padding: 30px;
+            border-radius: 10px;
+        }
+
+        .search-form-side .form-group {
+            margin-bottom: 20px;
+        }
+
+        .search-form-side label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .search-form-side select, 
+        .search-form-side input[type="text"],
+        .search-form-side input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: var(--font-poppins);
+            font-size: 15px;
+        }
+
+        .search-details-side {
+            flex-grow: 1;
+            display: flex;
+            gap: 30px;
+        }
+
+        .search-image-holder {
+            flex-shrink: 0;
+        }
+
+        .search-image-holder img {
+            width: 320px;
+            height: 320px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .search-text-content {
+            padding-top: 10px;
+        }
+
+        .search-text-content h3 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .search-text-content p {
+            color: var(--light-text);
+            margin-bottom: 20px;
+        }
+
+        /* --- Property Grid Section --- */
+        .property-grid-section {
+            background-color: var(--light-bg);
+            padding: 100px 0;
+            text-align: center;
+        }
+
+        .property-grid-section h2 {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .property-grid-section p {
+            color: var(--light-text);
+            margin-bottom: 60px;
+        }
+
+        .property-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+        }
+
+        .property-card {
+            background-color: var(--white);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
+            transition: box-shadow 0.3s;
+        }
+
+        .property-card:hover {
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .property-image-holder {
+            position: relative;
+            height: 220px;
+        }
+
+        .property-image-holder img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .price-tag {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .property-info {
+            padding: 20px;
+            text-align: left;
+        }
+
+        .property-info h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+        }
+
+        .property-info p {
+            font-size: 14px;
+            color: var(--light-text);
+            margin: 0 0 10px 0;
+        }
+
+        .details-list {
+            list-style: none;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        .details-list li {
+            font-size: 14px;
+            color: var(--light-text);
+            margin-bottom: 5px;
+        }
+
+        /* --- Contact/Map Section --- */
+        .contact-section {
+            padding: 100px 0;
+        }
+
+        .contact-content-wrapper {
+            display: flex;
+            gap: 50px;
+            align-items: flex-start;
+        }
+
+        .map-info-side {
+            flex: 2;
+        }
+
+        .map-placeholder {
+            height: 400px;
+            background-color: #eee;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .map-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.7;
+        }
+
+        .contact-info-grid {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .contact-icon {
+            color: var(--primary-color);
+            font-size: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--light-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .contact-item span {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .contact-form-side {
+            flex: 1;
+            background-color: var(--light-bg);
+            padding: 30px;
+            border-radius: 10px;
+        }
+
+        .contact-form-side h2 {
+            font-size: 30px;
+            font-weight: 700;
+            margin-bottom: 25px;
+        }
+
+        .contact-form-side input[type="text"],
+        .contact-form-side input[type="email"],
+        .contact-form-side textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: var(--font-poppins);
+            font-size: 15px;
+        }
+
+        .contact-form-side textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* --- Footer --- */
+        .footer {
+            background-color: var(--secondary-color);
+            color: var(--white);
+            padding: 30px 0;
+            font-size: 14px;
+        }
+
+        .footer a {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        /* --- Responsive Design (Basic Mobile adjustments) --- */
+        @media (max-width: 992px) {
+            .navbar { padding: 0 15px; }
+            .nav-links { display: none; }
+            .hero-content h1 { font-size: 40px; }
+            
+            .features-card { flex-direction: column; text-align: center; }
+            .features-image img { width: 100%; max-width: 400px; height: auto; }
+            .stats-grid { grid-template-columns: 1fr; }
+            
+            .search-content-wrapper { flex-direction: column; }
+            .search-form-side { width: 100%; }
+            .search-details-side { flex-direction: column; }
+            .search-image-holder { margin: 0 auto; }
+
+            .property-grid { grid-template-columns: 1fr; }
+            
+            .contact-content-wrapper { flex-direction: column; }
+            .contact-info-grid { flex-direction: column; gap: 20px; }
         }
     </style>
 </head>
-<body class="font-sans bg-gray-900 text-white min-h-screen">
-    
-    <div id="app-message" class="fixed top-20 right-4 z-50 transition-opacity duration-300 opacity-0"></div>
+<body>
 
-    <nav class="sticky top-0 bg-gray-800/90 backdrop-blur-sm shadow-xl z-30 p-4">
-        <div class="flex justify-between items-center max-w-7xl mx-auto">
-            <div class="text-2xl font-extrabold text-red-600">
-                SARKI-AUTOS MARKET
-            </div>
-            <div class="flex space-x-4">
-                <a id="nav-home" href="#home" class="nav-link px-3 py-2 rounded-full font-medium transition-colors duration-200 hover:bg-red-700/50">Home</a>
-                <a id="nav-auction" href="#auction-listings" class="nav-link px-3 py-2 rounded-full font-medium transition-colors duration-200 hover:bg-red-700/50">Auctions</a>
-                <button id="open-list-modal" class="px-4 py-2 bg-red-600 rounded-full font-bold shadow-md hover:bg-red-500 transition duration-200">
-                    List Your Car
-                </button>
+    <header class="header-top">
+        <div class="container">
+            <nav class="navbar">
+                <div class="logo-placeholder">[YOUR LOGO]</div>
+                
+                <ul class="nav-links">
+                    <li><a href="#home" class="active">Home</a></li>
+                    <li><a href="#properties">Properties</a></li>
+                    <li><a href="#">Property Details</a></li>
+                    <li><a href="#">Contact Us</a></li>
+                    <li class="main-btn-nav"><a href="#" class="btn-primary"><i class="fa fa-calendar"></i> Schedule a Visit</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero" id="home">
+        <div class="container">
+            <div class="hero-content">
+                <h5>Canada</h5>
+                <h1>HURRY! GET THE BEST VILLA FOR YOU</h1>
             </div>
         </div>
-        <p id="user-id-display" class="text-xs text-gray-400 mt-2 text-center"></p>
-    </nav>
+    </section>
 
-    <div id="app-container">
-
-        <div id="home-view" class="view">
-            <header id="hero-section" class="hero-section relative overflow-hidden flex items-center justify-center">
-                <div class="absolute inset-0 -z-10 overflow-hidden">
-                    <img 
-                        src="IMG_20251006_150623.JPG" 
-                        alt="Background" 
-                        class="w-full h-full object-cover animate-kenburns brightness-90"
-                    >
-                    <div class="absolute inset-0 bg-black/40"></div> 
+    <section class="features-section">
+        <div class="container">
+            <div class="features-card">
+                <div class="features-image">
+                    <img src="https://via.placeholder.com/300x380/606060/ffffff?text=Best+Apartment" alt="Best Apartment">
                 </div>
-
-                <div class="relative z-10 text-center p-6 md:p-12 max-w-4xl mx-auto">
-                    <div class="mb-8 md:mb-12">
-                        <div class="mx-auto w-32 h-32 md:w-48 md:h-48 text-red-600 mb-4 flex items-center justify-center">
-                            <img src="file_000000009dbc6243892bff1d73bffb63.png"
+                <div class="features-details">
+                    <h2>Best Apartment &amp; Sea view</h2>
+                    <p class="mb-4">Get the **best villa** website template in HTML CSS and JavaScript. Villa Agency is a pro version of <a href="#" style="color:var(--primary-color);">CSS Template</a> for your real estate business. This template is designed by <a href="#" style="color:var(--primary-color);">TemplateMo</a>.</p>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <i class="fa fa-home stat-icon"></i>
+                            <div><strong>250 m2</strong><span>Total Flat Space</span></div>
                         </div>
-                        <h1 class="text-6xl md:text-8xl font-extrabold text-white tracking-tight uppercase leading-none rounded-lg p-2">
-                            <span class="bg-red-700 px-3 py-1 rounded-xl shadow-2xl">Sarkin</span>mota
-                        </h1>
-                    </div>
-                    <p class="text-xl md:text-3xl text-gray-200 mb-10 mt-4 max-w-2xl mx-auto drop-shadow-lg">
-                        The Premier Destination for Verified Performance and Luxury Vehicles.
-                    </p>
-                    <a href="#auction-listings" class="px-8 py-3 text-lg font-semibold bg-red-700 text-white rounded-full shadow-2xl hover:bg-red-600 transition duration-300 transform hover:scale-105">
-                        View Live Auctions
-                    </a>
-                </div>
-            </header>
-
-            <main class="max-w-7xl mx-auto p-8 md:p-12">
-                <section class="text-center mb-16 border-b border-gray-700 pb-10">
-                    <h2 class="text-5xl font-extrabold text-red-600 mb-4">Welcome to Sarkinmota Autos</h2>
-                    <p class="text-gray-300 text-xl max-w-3xl mx-auto">
-                        We are the premier destination for buying and selling high-performance, classic, and exotic muscle cars. Our platform connects passionate enthusiasts with verified, top-tier vehicles through transparent, real-time auctions.
-                    </p>
-                </section>
-                <section class="mb-16">
-                    <h3 class="text-4xl font-bold text-white text-center mb-10">Why Choose Us?</h3>
-                    <div class="grid md:grid-cols-3 gap-8">
-                        <div class="bg-gray-800 p-6 rounded-xl shadow-2xl border-t-4 border-red-700 hover:bg-gray-700 transition duration-300">
-                             <svg class="w-10 h-10 text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-                            <h4 class="text-2xl font-bold mb-2 text-white">Real-Time Auctions</h4>
-                            <p class="text-gray-400">Bid instantly on the rarest muscle cars, from vintage classics to modern beasts. The thrill of the auction, right here.</p>
-                            <a href="#auction-listings" class="block mt-4 text-red-500 font-semibold hover:text-red-400">View Auctions &rarr;</a>
+                        <div class="stat-item">
+                            <i class="fa fa-handshake stat-icon"></i>
+                            <div><strong>Contract</strong><span>Contract Ready</span></div>
                         </div>
-                        <div class="bg-gray-800 p-6 rounded-xl shadow-2xl border-t-4 border-red-700 hover:bg-gray-700 transition duration-300">
-                             <svg class="w-10 h-10 text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-9.618 3.04A12.023 12.023 0 0012 21.025 12.023 12.023 0 0021.618 6.984z"></path></svg>
-                            <h4 class="text-2xl font-bold mb-2 text-white">Quality Assurance</h4>
-                            <p class="text-gray-400">Every car listed on Sarkinmota Autos is thoroughly vetted for authenticity and condition before auction.</p>
-                            <span class="block mt-4 text-gray-500 font-semibold">Learn More</span>
+                        <div class="stat-item">
+                            <i class="fa fa-credit-card stat-icon"></i>
+                            <div><strong>Payment</strong><span>Payment Process</span></div>
                         </div>
-                        <div class="bg-gray-800 p-6 rounded-xl shadow-2xl border-t-4 border-red-700 hover:bg-gray-700 transition duration-300">
-                            <svg class="w-10 h-10 text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-2.485 0-4.5 2.015-4.5 4.5S9.515 17 12 17s4.5-2.015 4.5-4.5S14.485 8 12 8z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19c-3.87 0-7.31-2.08-9-5.18l.84-1.7c1.47 2.76 4.67 4.58 8.16 4.58s6.69-1.82 8.16-4.58l.84 1.7c-1.69 3.1-5.13 5.18-9 5.18zM12 5c3.87 0 7.31 2.08 9 5.18l-.84 1.7c-1.47-2.76-4.67-4.58-8.16-4.58s-6.69 1.82-8.16 4.58l-.84-1.7C4.69 7.08 8.13 5 12 5z"></path></svg>
-                            <h4 class="text-2xl font-bold mb-2 text-white">Sell With Confidence</h4>
-                            <p class="text-gray-400">List your vehicle easily and reach a global network of serious, pre-vetted buyers. Maximize your return.</p>
-                            <button onclick="window.openModal('list-car-modal')" class="block mt-4 text-red-500 font-semibold hover:text-red-400">Start Listing &rarr;</button>
+                        <div class="stat-item">
+                            <i class="fa fa-bed stat-icon"></i>
+                            <div><strong>3</strong><span>Bedrooms</span></div>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fa fa-bath stat-icon"></i>
+                            <div><strong>2</strong><span>Bathrooms</span></div>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fa fa-calendar stat-icon"></i>
+                            <div><strong>2024</strong><span>Ready by</span></div>
                         </div>
                     </div>
-                </section>
-                <section class="bg-red-800 p-8 rounded-xl shadow-2xl text-center">
-                    <h3 class="text-4xl font-extrabold mb-3">Ready to Feel the Power?</h3>
-                    <p class="text-lg text-red-200 mb-6">Join the Sarkinmota Autos community today and start bidding on your dream machine.</p>
-                    <a href="#auction-listings" class="px-10 py-4 text-xl font-bold bg-white text-gray-900 rounded-full shadow-lg hover:bg-gray-200 transition duration-300 transform hover:scale-105">
-                        Start Your Engine
-                    </a>
-                </section>
-            </main>
-        </div>
-
-        <div id="auction-listings-view" class="view hidden p-8 md:p-12 max-w-7xl mx-auto">
-            <div class="flex justify-between items-center mb-10 border-b-2 border-red-700 pb-4">
-                <h2 class="text-5xl font-extrabold text-white">Live Muscle Car Auctions</h2>
-                <button onclick="window.openModal('list-car-modal')" class="px-6 py-3 text-lg font-semibold bg-red-700 text-white rounded-xl shadow-lg hover:bg-red-600 transition duration-200">
-                    + Start New Auction
-                </button>
-            </div>
-            
-            <div id="auction-list-container" class="min-h-[400px]">
-                <p class="text-center text-gray-500 py-10">Loading auctions...</p>
-            </div>
-        </div>
-
-    </div>
-
-    <div id="list-car-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-xl p-8 max-w-lg w-full shadow-2xl border-2 border-red-700/50" role="dialog" aria-modal="true">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-3xl font-bold text-red-500">List Your Muscle Car</h3>
-                <button id="close-list-modal-btn" class="text-gray-400 hover:text-white transition duration-200">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            
-            <form id="list-car-form" class="space-y-4">
-                <div> <label for="make" class="block text-sm font-medium text-gray-300 mb-1">Make</label> <input type="text" id="make" name="make" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-red-500 focus:border-red-500"> </div>
-                <div> <label for="model" class="block text-sm font-medium text-gray-300 mb-1">Model</label> <input type="text" id="model" name="model" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-red-500 focus:border-red-500"> </div>
-                <div> <label for="year" class="block text-sm font-medium text-gray-300 mb-1">Year</label> <input type="number" id="year" name="year" required min="1950" max="2025" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-red-500 focus:border-red-500"> </div>
-                <div> <label for="startPrice" class="block text-sm font-medium text-gray-300 mb-1">Starting Price (USD)</label> <input type="number" id="startPrice" name="startPrice" required min="1000" step="100" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-red-500 focus:border-red-500"> </div>
-                
-                <div>
-                    <label for="model3dUrl" class="block text-sm font-medium text-gray-300 mb-1">3D Model URL (Firebase Storage .glb)</label>
-                    <input type="url" id="model3dUrl" name="model3dUrl" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-red-500 focus:border-red-500" placeholder="e.g., https://firebasestorage.com/path/to/model.glb">
                 </div>
-                
-                <p class="text-sm text-gray-400 pt-2">Auction duration will be set to 7 days automatically.</p>
-
-                <button type="submit" class="w-full mt-6 py-3 bg-red-600 text-white font-bold rounded-lg shadow-xl hover:bg-red-500 transition duration-200">
-                    Confirm Listing
-                </button>
-            </form>
+            </div>
         </div>
-    </div>
+    </section>
 
-    <div id="bid-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-xl p-8 max-w-lg w-full shadow-2xl border-2 border-green-500/50" role="dialog" aria-modal="true">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-3xl font-bold text-green-500">Place Your Bid!</h3>
-                <button id="close-bid-modal-btn" class="text-gray-400 hover:text-white transition duration-200">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
+    <section class="video-section">
+        <div class="container">
+            <div class="video-wrapper">
+                <div class="video-content">
+                    <h2>Get Closer View &amp; Different Feeling</h2>
+                    <div class="play-button" onclick="alert('Playing a video... (Placeholder)')">
+                        <i class="fa fa-play"></i>
+                    </div>
+                </div>
             </div>
             
-            <p class="text-xl text-gray-300 mb-4">Current Highest Bid: <span id="current-bid-display" class="font-bold text-yellow-400">N/A</span></p>
-
-            <form id="bid-form" class="space-y-4">
-                <div>
-                    <label for="bid-amount" class="block text-sm font-medium text-gray-300 mb-1">Your Bid Amount (USD)</label>
-                    <input type="number" id="bid-amount" name="bid-amount" required step="100" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500">
+            <div class="counter-grid">
+                <div class="counter-item">
+                    <div class="number" id="c-buildings">34</div>
+                    <div class="text">Buildings Finished Now</div>
                 </div>
-                
-                <p class="text-sm text-gray-400 pt-2">The minimum bid must be higher than the current highest bid.</p>
-
-                <button type="submit" class="w-full mt-6 py-3 bg-green-600 text-white font-bold rounded-lg shadow-xl hover:bg-green-500 transition duration-200">
-                    Submit Bid
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <div id="3d-viewer-modal" class="hidden fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-xl p-4 max-w-5xl w-full h-5/6 shadow-2xl border-2 border-blue-700/50 flex flex-col" role="dialog" aria-modal="true">
-            <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-700">
-                <h3 id="3d-modal-title" class="text-3xl font-bold text-blue-500">3D View</h3>
-                <button id="close-3d-modal-btn" class="text-gray-400 hover:text-white transition duration-200">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
+                <div class="counter-item">
+                    <div class="number" id="c-years">12</div>
+                    <div class="text">Years Experience</div>
+                </div>
+                <div class="counter-item">
+                    <div class="number" id="c-awards">24</div>
+                    <div class="text">Awards Won 2023</div>
+                </div>
             </div>
+        </div>
+    </section>
+
+    <section class="search-deal-section">
+        <div class="container">
+            <div class="search-deal-header">
+                <h2>Find Your Best Deal Right Now!</h2>
+                <div class="search-tabs" id="searchTabs">
+                    <button class="active" data-tab="apartment">Apartment</button>
+                    <button data-tab="villa">Villa</button>
+                    <button data-tab="penthouse">Penthouse</button>
+                </div>
+            </div>
+
+            <div class="search-content-wrapper">
+                <div class="search-form-side">
+                    <div class="form-group">
+                        <label for="area">Total Area</label>
+                        <select id="area">
+                            <option>100m2</option>
+                            <option>150m2</option>
+                            <option>200m2</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="floor">Number of Floors</label>
+                        <select id="floor">
+                            <option>1</option>
+                            <option>2</option>
+                            <option>3</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="rooms">Number of Rooms</label>
+                        <select id="rooms">
+                            <option>4</option>
+                            <option>5</option>
+                            <option>6</option>
+                        </select>
+                    </div>
+                    <a href="#" class="btn-primary" style="width: 100%; text-align: center;">Search Now</a>
+                </div>
+
+                <div class="search-details-side">
+                    <div class="search-image-holder">
+                        <img src="https://via.placeholder.com/320x320/606060/ffffff?text=Current+Deal" alt="Current Deal">
+                    </div>
+                    <div class="search-text-content">
+                        <h3>Extra Info About Apartment</h3>
+                        <p>You can find our current listings, which are perfect for you and your family! Don't miss out on this deal, it's one of the best around. We offer free consultation and flexible payment plans.</p>
+                        <div style="font-size: 14px; margin-bottom: 10px;">
+                            <strong style="color:var(--primary-color);">Address:</strong> Sunny Isles Beach, FL 33160, United States
+                        </div>
+                        <div style="font-size: 14px; margin-bottom: 10px;">
+                            <strong style="color:var(--primary-color);">Area:</strong> 150 m2
+                        </div>
+                        <div style="font-size: 14px; margin-bottom: 10px;">
+                            <strong style="color:var(--primary-color);">Floor:</strong> 15
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="property-grid-section" id="properties">
+        <div class="container">
+            <h2>We Provide The Best Property You Like</h2>
+            <p>Find the best one for you and your family.</p>
             
-            <div class="flex-grow min-h-0">
-                <model-viewer 
-                    id="3d-model-viewer"
-                    src="" 
-                    alt="A 3D model of the vehicle"
-                    shadow-intensity="1"
-                    camera-controls
-                    touch-action="pan-y"
-                    auto-rotate
-                    ar
-                    class="h-full w-full"
-                >
-                <div slot="progress-bar" class="w-full h-full bg-gray-900 flex items-center justify-center">
-                    <div class="text-white text-xl animate-pulse">Loading 3D Model...</div>
+            <div class="property-grid">
+                <div class="property-card">
+                    <div class="property-image-holder">
+                        <img src="https://via.placeholder.com/370x220/3d3d3d/ffffff?text=Property+1" alt="Property 1">
+                        <span class="price-tag">$2,264,000</span>
+                    </div>
+                    <div class="property-info">
+                        <h3>Apartment</h3>
+                        <p>18 New Street Miami, OR 97219</p>
+                        <ul class="details-list">
+                            <li><i class="fa fa-bed" style="color: var(--primary-color);"></i> 4 Beds</li>
+                            <li><i class="fa fa-bath" style="color: var(--primary-color);"></i> 3 Baths</li>
+                            <li><i class="fa fa-ruler-combined" style="color: var(--primary-color);"></i> 1,600 sqft</li>
+                        </ul>
+                        <a href="#" class="btn-primary" style="padding: 10px 20px; font-size: 14px; margin-top: 15px;">Schedule a Visit</a>
+                    </div>
                 </div>
-                </model-viewer>
-            </div>
-            <p class="text-sm text-gray-400 text-center mt-2">Use your mouse/finger to rotate and zoom the model. AR button available on supported devices.</p>
-        </div>
-    </div>
 
+                <div class="property-card">
+                    <div class="property-image-holder">
+                        <img src="https://via.placeholder.com/370x220/3d3d3d/ffffff?text=Property+2" alt="Property 2">
+                        <span class="price-tag">$1,180,000</span>
+                    </div>
+                    <div class="property-info">
+                        <h3>Villa House</h3>
+                        <p>543 North Bend River, FL 33280</p>
+                        <ul class="details-list">
+                            <li><i class="fa fa-bed" style="color: var(--primary-color);"></i> 6 Beds</li>
+                            <li><i class="fa fa-bath" style="color: var(--primary-color);"></i> 5 Baths</li>
+                            <li><i class="fa fa-ruler-combined" style="color: var(--primary-color);"></i> 3,500 sqft</li>
+                        </ul>
+                        <a href="#" class="btn-primary" style="padding: 10px 20px; font-size: 14px; margin-top: 15px;">Schedule a Visit</a>
+                    </div>
+                </div>
+
+                <div class="property-card">
+                    <div class="property-image-holder">
+                        <img src="https://via.placeholder.com/370x220/3d3d3d/ffffff?text=Property+3" alt="Property 3">
+                        <span class="price-tag">$5,500,000</span>
+                    </div>
+                    <div class="property-info">
+                        <h3>Penthouse</h3>
+                        <p>789 Highrise Tower, NY 10001</p>
+                        <ul class="details-list">
+                            <li><i class="fa fa-bed" style="color: var(--primary-color);"></i> 8 Beds</li>
+                            <li><i class="fa fa-bath" style="color: var(--primary-color);"></i> 6 Baths</li>
+                            <li><i class="fa fa-ruler-combined" style="color: var(--primary-color);"></i> 6,200 sqft</li>
+                        </ul>
+                        <a href="#" class="btn-primary" style="padding: 10px 20px; font-size: 14px; margin-top: 15px;">Schedule a Visit</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="contact-section">
+        <div class="container">
+            <h2 class="text-center" style="font-size: 36px; font-weight: 700; margin-bottom: 50px;">Get In Touch With Our Agents</h2>
+            
+            <div class="contact-content-wrapper">
+                <div class="map-info-side">
+                    <div class="map-placeholder">
+                        <img src="https://via.placeholder.com/700x400/dddddd/333333?text=Google+Map+Placeholder" alt="Map Location">
+                        <div style="position: absolute; bottom: 20px; left: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                            <i class="fa fa-map-marker-alt" style="color: var(--primary-color);"></i> 24/7 Villa Agency
+                        </div>
+                    </div>
+                    
+                    <div class="contact-info-grid">
+                        <div class="contact-item">
+                            <div class="contact-icon"><i class="fa fa-phone"></i></div>
+                            <div>
+                                <span style="display: block; color: var(--light-text); font-size: 14px;">090-484-0123</span>
+                                <span style="display: block; font-weight: 700;">Phone Number</span>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="contact-icon"><i class="fa fa-envelope"></i></div>
+                            <div>
+                                <span style="display: block; color: var(--light-text); font-size: 14px;">info@villa.co</span>
+                                <span style="display: block; font-weight: 700;">Business Email</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="contact-form-side">
+                    <form onsubmit="handleContactSubmit(event)">
+                        <input type="text" placeholder="Your Name" required>
+                        <input type="email" placeholder="Your Email" required>
+                        <input type="text" placeholder="Subject" required>
+                        <textarea placeholder="Message" required></textarea>
+                        <button type="submit" class="btn-primary" style="border: none;">Send Message</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container text-center">
+            <p>Copyright © 2024 <a href="#">Villa Agency</a> Co., Ltd. All Rights Reserved. Design: <a href="https://templatemo.com" target="_blank">TemplateMo</a></p>
+        </div>
+    </footer>
+
+    <script>
+        // Tab switching logic for the Search/Find Deal Section
+        const searchTabs = document.getElementById('searchTabs');
+        const tabButtons = searchTabs.querySelectorAll('button');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all buttons
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                
+                // Add active class to the clicked button
+                button.classList.add('active');
+                
+                // You would typically change the content here based on the selected tab (e.g., fetch data)
+                console.log(`Tab switched to: ${button.getAttribute('data-tab')}`);
+            });
+        });
+
+        // Simple form submission handler
+        function handleContactSubmit(event) {
+            event.preventDefault();
+            alert("Message sent successfully! (Form submission is a placeholder)");
+            // In a real app, you would collect the form data and send it to a server.
+        }
+
+        // Simple counter animation (for a touch of JS-driven imitation)
+        function animateCounter(id, endValue) {
+            const element = document.getElementById(id);
+            let start = 0;
+            const duration = 2000;
+            const step = Math.ceil(endValue / (duration / 16)); // 60 FPS
+
+            const timer = setInterval(() => {
+                start += step;
+                if (start >= endValue) {
+                    start = endValue;
+                    clearInterval(timer);
+                }
+                element.textContent = start;
+            }, 16);
+        }
+
+        // Run the counters when the page loads (or when they enter the viewport in a real app)
+        window.addEventListener('load', () => {
+            animateCounter('c-buildings', 34);
+            animateCounter('c-years', 12);
+            animateCounter('c-awards', 24);
+        });
+    </script>
 </body>
-</html>
+    </html>
