@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Villa Agency Template - Exact Tailwind Recreation</title>
+    <title>Villa Agency Template - Exact Tailwind Recreation (Final)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
@@ -12,10 +12,10 @@
         /* Custom colors and configuration for closer imitation */
         :root {
             --primary-color: #ee626b; /* The accent red/orange */
-            --secondary-color: #1e1e1e; /* Dark text */
+            --secondary-color: #1e1e1e; /* Main dark text, used for buttons/tags that look black */
             --light-text: #7a7a7a;
             --light-bg: #f7f7f7;
-            --dark-bg: #2a2a2a;
+            --footer-bg: #2a2a2a; /* Dark gray for the footer, closer to the template */
         }
 
         /* Extend Tailwind Configuration */
@@ -27,7 +27,8 @@
                         'secondary': 'var(--secondary-color)',
                         'light-text': 'var(--light-text)',
                         'light-bg': 'var(--light-bg)',
-                        'dark-bg': 'var(--dark-bg)',
+                        'footer-bg': 'var(--footer-bg)', /* New color for the footer */
+                        'black-button': '#1e1e1e', /* Exact dark color for buttons/tags in property grid */
                     },
                     fontFamily: {
                         'sans': ['Poppins', 'Roboto', 'sans-serif'],
@@ -225,8 +226,8 @@
             
             <div class="flex justify-center space-x-3 mb-10" id="searchTabs">
                 <button class="tab-btn active bg-primary text-white py-2 px-6 rounded-full text-sm font-medium transition duration-300" data-tab="apartment">Appartment</button>
-                <button class="tab-btn bg-dark-bg text-white py-2 px-6 rounded-full text-sm font-medium hover:bg-primary transition duration-300" data-tab="villa">Villa House</button>
-                <button class="tab-btn bg-dark-bg text-white py-2 px-6 rounded-full text-sm font-medium hover:bg-primary transition duration-300" data-tab="penthouse">Penthouse</button>
+                <button class="tab-btn bg-black-button text-white py-2 px-6 rounded-full text-sm font-medium hover:bg-primary transition duration-300" data-tab="villa">Villa House</button>
+                <button class="tab-btn bg-black-button text-white py-2 px-6 rounded-full text-sm font-medium hover:bg-primary transition duration-300" data-tab="penthouse">Penthouse</button>
             </div>
 
             <div class="flex flex-col lg:flex-row gap-10">
@@ -263,12 +264,12 @@
                     </div>
                     <div class="p-6 text-left">
                         <div class="flex justify-between items-center mb-2">
-                            <span class="bg-dark-bg text-white text-xs font-semibold px-3 py-1 rounded-full">Luxury Villa</span>
+                            <span class="bg-black-button text-white text-xs font-semibold px-3 py-1 rounded-full">Luxury Villa</span>
                             <span class="text-primary text-lg font-bold">$2,284,000</span>
                         </div>
                         <p class="text-secondary text-lg font-bold mb-2">18 New Street Miami, OR 97219</p>
                         <p class="text-light-text text-xs mb-4">Bedrooms: <strong class="text-secondary">6</strong> Bathrooms: <strong class="text-secondary">5</strong> Area: <strong class="text-secondary">545m2</strong> Floor: <strong class="text-secondary">3</strong> Parking: <strong class="text-secondary">8 spots</strong></p>
-                        <a href="#" class="bg-dark-bg text-white text-sm font-medium uppercase py-3 w-full block rounded-full text-center mt-4 hover:bg-primary transition duration-300">Schedule a Visit</a>
+                        <a href="#" class="bg-black-button text-white text-sm font-medium uppercase py-3 w-full block rounded-full text-center mt-4 hover:bg-primary transition duration-300">Schedule a Visit</a>
                     </div>
                 </div>
 
@@ -278,12 +279,12 @@
                     </div>
                     <div class="p-6 text-left">
                          <div class="flex justify-between items-center mb-2">
-                            <span class="bg-dark-bg text-white text-xs font-semibold px-3 py-1 rounded-full">Luxury Villa</span>
+                            <span class="bg-black-button text-white text-xs font-semibold px-3 py-1 rounded-full">Luxury Villa</span>
                             <span class="text-primary text-lg font-bold">$1,180,000</span>
                         </div>
                         <p class="text-secondary text-lg font-bold mb-2">54 Mid Street Florida, OR 27001</p>
                         <p class="text-light-text text-xs mb-4">Bedrooms: <strong class="text-secondary">6</strong> Bathrooms: <strong class="text-secondary">5</strong> Area: <strong class="text-secondary">450m2</strong> Floor: <strong class="text-secondary">3</strong> Parking: <strong class="text-secondary">8 spots</strong></p>
-                        <a href="#" class="bg-dark-bg text-white text-sm font-medium uppercase py-3 w-full block rounded-full text-center mt-4 hover:bg-primary transition duration-300">Schedule a Visit</a>
+                        <a href="#" class="bg-black-button text-white text-sm font-medium uppercase py-3 w-full block rounded-full text-center mt-4 hover:bg-primary transition duration-300">Schedule a Visit</a>
                     </div>
                 </div>
 
@@ -293,12 +294,12 @@
                     </div>
                     <div class="p-6 text-left">
                          <div class="flex justify-between items-center mb-2">
-                            <span class="bg-dark-bg text-white text-xs font-semibold px-3 py-1 rounded-full">Luxury Villa</span>
+                            <span class="bg-black-button text-white text-xs font-semibold px-3 py-1 rounded-full">Luxury Villa</span>
                             <span class="text-primary text-lg font-bold">$1,460,000</span>
                         </div>
                         <p class="text-secondary text-lg font-bold mb-2">26 Old Street Miami, OR 38540</p>
                         <p class="text-light-text text-xs mb-4">Bedrooms: <strong class="text-secondary">5</strong> Bathrooms: <strong class="text-secondary">4</strong> Area: <strong class="text-secondary">225m2</strong> Floor: <strong class="text-secondary">3</strong> Parking: <strong class="text-secondary">10 spots</strong></p>
-                        <a href="#" class="bg-dark-bg text-white text-sm font-medium uppercase py-3 w-full block rounded-full text-center mt-4 hover:bg-primary transition duration-300">Schedule a Visit</a>
+                        <a href="#" class="bg-black-button text-white text-sm font-medium uppercase py-3 w-full block rounded-full text-center mt-4 hover:bg-primary transition duration-300">Schedule a Visit</a>
                     </div>
                 </div>
 
@@ -308,12 +309,12 @@
                     </div>
                     <div class="p-6 text-left">
                          <div class="flex justify-between items-center mb-2">
-                            <span class="bg-dark-bg text-white text-xs font-semibold px-3 py-1 rounded-full">Apartment</span>
+                            <span class="bg-black-button text-white text-xs font-semibold px-3 py-1 rounded-full">Apartment</span>
                             <span class="text-primary text-lg font-bold">$584,500</span>
                         </div>
                         <p class="text-secondary text-lg font-bold mb-2">12 New Street Miami, OR 12650</p>
                         <p class="text-light-text text-xs mb-4">Bedrooms: <strong class="text-secondary">4</strong> Bathrooms: <strong class="text-secondary">3</strong> Area: <strong class="text-secondary">125m2</strong> Floor: <strong class="text-secondary">26th</strong> Parking: <strong class="text-secondary">2 cars</strong></p>
-                        <a href="#" class="bg-dark-bg text-white text-sm font-medium uppercase py-3 w-full block rounded-full text-center mt-4 hover:bg-primary transition duration-300">Schedule a Visit</a>
+                        <a href="#" class="bg-black-button text-white text-sm font-medium uppercase py-3 w-full block rounded-full text-center mt-4 hover:bg-primary transition duration-300">Schedule a Visit</a>
                     </div>
                 </div>
             </div>
@@ -372,14 +373,14 @@
                             <label for="message" class="block text-light-text text-sm">Message</label>
                             <textarea id="message" placeholder="Your Message..." required class="w-full bg-light-bg p-1 text-secondary text-lg font-medium border-0 focus:ring-0 h-32 resize-none"></textarea>
                         </div>
-                        <button type="submit" class="bg-dark-bg text-white text-sm font-medium uppercase py-4 w-full rounded-full hover:bg-primary transition duration-300 shadow-lg border-0">Send Message</button>
+                        <button type="submit" class="bg-black-button text-white text-sm font-medium uppercase py-4 w-full rounded-full hover:bg-primary transition duration-300 shadow-lg border-0">Send Message</button>
                     </form>
                 </div>
             </div>
         </div>
     </section>
 
-    <footer class="bg-dark-bg text-white py-8">
+    <footer class="bg-footer-bg text-white py-8">
         <div class="container mx-auto px-4 text-center">
             <p class="text-sm">
                 Copyright © 2024 <a href="#" class="text-primary font-medium">Villa Agency</a> Co., Ltd. All Rights Reserved. Design: <a href="https://templatemo.com" target="_blank" class="text-primary font-medium">TemplateMo</a>
@@ -396,13 +397,13 @@
             button.addEventListener('click', () => {
                 // Remove active styling from all buttons
                 tabButtons.forEach(btn => {
-                    btn.classList.remove('active', 'bg-primary', 'text-white');
-                    btn.classList.add('bg-dark-bg', 'text-white');
+                    btn.classList.remove('active', 'bg-primary');
+                    btn.classList.add('bg-black-button');
                 });
                 
                 // Add active styling to the clicked button
                 button.classList.add('active', 'bg-primary');
-                button.classList.remove('bg-dark-bg');
+                button.classList.remove('bg-black-button');
                 
                 console.log(`Tab switched to: ${button.getAttribute('data-tab')}`);
             });
@@ -439,4 +440,4 @@
         });
     </script>
 </body>
-                            </html>
+    </html>
